@@ -16,7 +16,8 @@
 # at http://www.rubydoc.info/gems/pg/PG/Connection:initialize.
 
 require 'pg'
-require 'pgdiff'
+#require 'pgdiff'
+require_relative '../lib/pgdiff'
 
 if ARGV.length != 2
   raise(ArgumentError, "You must specify two arguments - a source and target db connection string.  For " +
