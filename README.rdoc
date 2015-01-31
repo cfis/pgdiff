@@ -2,8 +2,8 @@
 
 == Overview
 
-This ruby gem provides a script that compares two PostgreSQL databases and generates SQL statements to make
-their structure the same. The original version was posted at http://www.dzone.com/snippets/pgdiff-compare-two-postgresql.
+This ruby gem provides the pgdiff script that compares two PostgreSQL databases and generates SQL statements to make
+their structures the same. The original version was posted at http://www.dzone.com/snippets/pgdiff-compare-two-postgresql.
 
 The script detects differences in:
 
@@ -21,25 +21,29 @@ The script detects differences in:
 
 Two objects with the same name are considered equal if they have the same definitions.
 
-Missing features: tracking of ownership,  user rights, object dependencies, table inheritance, type casts, aggregates and operators.
+pgdiff does not currently compare ownership, user rights, object dependencies, table inheritance, type casts, aggregates
+or operators.  Patches are welcome to add this functionality.
 
 == Installation
 
 Install pgdiff using Ruby Gems:
 
-gem install "pgdiff"
+  gem install "pgdiff"
 
 == Usage
 
-pg_diff source_connection_string destination_connection_string
+To use pgdiff open a command prompt and runn the following command:
 
-The format of the connection strings is documented in the Ruby pg gem at http://www.rubydoc.info/gems/pg/PG/Connection:initialize.
+  pg_diff "source_connection_string" "destination_connection_string"
+
+The format of the two connection strings is documented in the Ruby pg gem.  For more information
+see http://www.rubydoc.info/gems/pg/PG/Connection:initialize
 
 == Output
 
 pgdiff will output the necesssary sql statements to update the source database to have the same structure
 as the destination database.  PLEASE VERIFY the accuracy of the generated sql statements before running them,
-its always possible the script has bugs.
+it is always possible the script has bugs.
 
 == Support
 
@@ -47,4 +51,4 @@ If you have any questions or want to contribute to pgdiff please visit https://g
 
 == License
 
-pgdiff is available under the MIT license.
+pgdiff is provided under the MIT license.
