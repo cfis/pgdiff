@@ -1,0 +1,31 @@
+#!/bin/env ruby
+
+# This is a simple approach to track database schema changes in PostgreSQL.
+# In some way it is similar to diff program, finding out structure changes
+# and results in  SQL script to upgrade to new schema.
+# 
+# Differences are tracked on schemas, domains, sequences, views, tables, indices, constraints, rules, functions, triggers.
+# Two objects with the same name are considered equal if they have the same definitions. 
+#
+# Missing features: tracking of ownership,  user rights, object dependencies, table inheritance, type casts, aggregates, operators.
+#
+# Usage:
+# ./pg_diff source_connection_string destination_connection_string
+#
+# The format of the connection strings is documented in the Ruby pg gem
+# at http://www.rubydoc.info/gems/pg/PG/Connection:initialize.
+
+require 'pg'
+require 'pgdiff'
+
+if ARGV.length != 2
+  raise(ArgumentError, "You must specify two arguments - a source and target db connection string.  For " +
+                       "more information about how to format connection strings see http://www.rubydoc.info/gems/pg/PG/Connection:initialize")
+end
+
+source_db = ARGV[0]
+target_db = ARGV[1]
+
+diff = PgDiff::Diff.new(ARGV[0], ARGV[1])
+diff.run_compare
+puts diff.output
