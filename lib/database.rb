@@ -29,7 +29,7 @@ module PgDiff
           when 'r'
             @tables["#{schema}.#{relname}"] = Table.new(conn, schema, relname)
           when 'v'
-            @views ["#{schema}.#{relname}"] = View.new(conn, schema, relname)
+            @views["#{schema}.#{relname}"] = View.new(conn, schema, relname)
           when 'S'
             @sequences["#{schema}.#{relname}"] = Sequence.new(conn, schema, relname)
         end
