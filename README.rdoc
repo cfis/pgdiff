@@ -1,6 +1,6 @@
-= Leaflet JS Rails
+= pgdiff
 
-# pgdiff
+== Overview
 
 This ruby gem provides a script that compares two PostgreSQL databases and generates SQL statements to make
 their structure the same. The original version was posted at http://www.dzone.com/snippets/pgdiff-compare-two-postgresql.
@@ -23,84 +23,28 @@ Two objects with the same name are considered equal if they have the same defini
 
 Missing features: tracking of ownership,  user rights, object dependencies, table inheritance, type casts, aggregates and operators.
 
-## Usage
-
-./pg_diff source_connection_string destination_connection_string
-
-The format of the connection strings is documented in the Ruby pg gem at http://www.rubydoc.info/gems/pg/PG/Connection:initialize.
-
-
-
-
-
-An important feature of this utility is that it never modifies any database directly. You are solely responsible for verifying the generated SQL before running it against your database. Now that you know about that, it should give you confidence that it is safe to try out and see what SQL gets generated.
-
-Written in GoLang, pgdiff compares the schema between two PostgreSQL databases and generates alter statements to be manually run against the second database. At the moment, not everything in the schema is compared, but the things considered important are: roles, sequences, tables, columns (and their default values), primary keys, unique constraints, foreign keys, roles, ownership information, and grants.
-
-It is written to be easy to add and improve the accuracy of the diff. If you find something that seems wrong and you want me to look at it, please send me two schema-only database dumps that I can test with (Use the --schema-only option with pg_dump)
-
-
-
-== Overview
-leaflet-js wraps the Leaflet Javascript library in an asset gem so it can
-easily be used with Rails.  It also includes the Leaflet.Label and Leaflet.Draw
-plusins.  For more information about the Leaflet library, please visit http://leafletjs.com.
-
 == Installation
 
-In your Gemfile, add this line:
+Install pgdiff using Ruby Gems:
 
-gem "leaflet-js"
-
-Then, run bundle install. You're done!
+gem install "pgdiff"
 
 == Usage
 
-Leaflet provides javascript, css and image assets.  The easiest way to use these assets in your project is to
-include leaflet-js.js and leaflet-js.css in your application.js and application.css files.  You may also
-pick just the files you want to use in your project.
+pg_diff source_connection_string destination_connection_string
 
-=== Javascripts
+The format of the connection strings is documented in the Ruby pg gem at http://www.rubydoc.info/gems/pg/PG/Connection:initialize.
 
-leaflet-js.js <- Includes all the js files below
-leaflet.js
-leaflet.draw.js
-leaflet.label.js
+== Output
 
-=== Stylesheets
-
-leaflet-js.css <- Includes all the css files below
-leaflet.css
-leaflet.draw.css
-leaflet.draw.ie.css
-leaflet.label.css
-
-=== Images
-
-layers.png
-layers-2x.png
-marker-icon.png
-marker-icon-2x.png
-market-shadow.png
-market-shadow-2x.png
-spritesheet.png
-spritesheet-2x.png
-
-Note when using Rails in production, with asset digests on, the Leaflet.Draw marker tool will not display
-an icon. The issue is that images included in this gem will be have a digest added to their name.  However,
-the leaflet javascript code will be looking for asset/images/marker-icon.png or
-assets/images/marker-icon-2x.png.
-
-One solution is to copy the images to your public/images folder.  Then you have to tell leaflet about the
-path by setting L.Icon.Default.imagePath to '/images'
+pgdiff will output the necesssary sql statements to update the source database to have the same structure
+as the destination database.  PLEASE VERIFY the accuracy of the generated sql statements before running them,
+its always possible the script has bugs.
 
 == Support
 
-If you have any questions about leaflet, please refer them to the Leaflet maintainers at
-http://leafletjs.com.  If you have any questions about how leaflet-js wraps
-leaflet, then please refer to https://github.com/cfis/leaflet-js.
+If you have any questions or want to contribute to pgdiff please visit https://github.com/cfis/pgdiff.git
 
 == License
 
-See LICENSE for license information about leaflet-js.  Please note that the Leaflet project
-has its own LICENSE file also.
+pgdiff is available under the MIT license.
