@@ -2,7 +2,7 @@
 
 == Overview
 
-This ruby gem provides the pgdiff script that compares two PostgreSQL databases and generates SQL statements to make
+This ruby gem provides a pgdiff script that compares two PostgreSQL databases and generates SQL statements to make
 their structures the same. The original version was posted at http://www.dzone.com/snippets/pgdiff-compare-two-postgresql.
 
 The script detects differences in:
