@@ -23,9 +23,6 @@ if ARGV.length != 2
                        "more information about how to format connection strings see http://www.rubydoc.info/gems/pg/PG/Connection:initialize")
 end
 
-source_db = ARGV[0]
-target_db = ARGV[1]
-
 diff = PgDiff::Diff.new(ARGV[0], ARGV[1])
 diff.run_compare
 puts diff.output
