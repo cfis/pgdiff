@@ -37,7 +37,7 @@ To use pgdiff open a command prompt and runn the following command:
   pg_diff "source_connection_string" "destination_connection_string"
 
 The format of the two connection strings is documented in the Ruby pg gem.  For more information
-see http://www.rubydoc.info/gems/pg/PG/Connection:initialize
+see https://www.rubydoc.info/gems/pg/PG/Connection.new
 
 == Output
 
