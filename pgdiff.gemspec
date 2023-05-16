@@ -1,7 +1,11 @@
 # encoding: utf-8
+
+$:.push File.expand_path("../lib", __FILE__)
+require "pgdiff/version"
+
 Gem::Specification.new do |spec|
   spec.name        = 'pgdiff'
-  spec.version     = '1.0.0'
+  spec.version     = PgDiff::VERSION
   spec.homepage    = 'https://github.com/cfis/pgdiff.git'
   spec.description     = <<-EOS
 Compares two PostgreSQL databases and generates the SQL statements needed to make their structure the same.
