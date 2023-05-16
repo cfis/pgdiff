@@ -13,16 +13,44 @@
 # ./pg_diff source_connection_string destination_connection_string
 #
 # The format of the connection strings is documented in the Ruby pg gem
-# at http://www.rubydoc.info/gems/pg/PG/Connection:initialize.
+# at https://www.rubydoc.info/gems/pg/PG/Connection.new
+
+lib_path = File.expand_path(File.join(__dir__, '..', 'lib'))
+$LOAD_PATH.unshift(File.expand_path(lib_path))
 
 require 'pg'
 require 'pgdiff'
+require 'optparse'
+require 'ostruct'
 
-if ARGV.length != 2
-  raise(ArgumentError, "You must specify two arguments - a source and target db connection string.  For " +
-                       "more information about how to format connection strings see http://www.rubydoc.info/gems/pg/PG/Connection:initialize")
-end
+options = OpenStruct.new
+options.source = nil
+options.target = nil
+options.ignore_schemas = []
 
-diff = PgDiff::Diff.new(ARGV[0], ARGV[1])
+args = OptionParser.new do |parser|
+  parser.version = PgDiff::VERSION
+
+  parser.banner = "Usage: pgdiff --source --target"
+
+  parser.on("-s", "--source=connection_string", "Source connection string. See https://www.rubydoc.info/gems/pg/PG/Connection.new") do |source|
+    options.source = source
+  end
+
+  parser.on("-t", "--target=connection_string", "Target connection string. See see https://www.rubydoc.info/gems/pg/PG/Connection.new") do |target|
+    options.target = target
+  end
+
+  parser.on("--ignore_schemas=schema1,schema2", "Schemas to ignore. Comma separated string") do |ignore_schemas|
+    options.ignore_schemas = ignore_schemas.split(',').map {|schema_name| schema_name.strip}
+  end
+
+  parser.on("-h", "--help", "Prints this help") do
+    puts parser
+    exit
+  end
+end.parse!
+
+diff = PgDiff::Diff.new(options.source, options.target, ignore_schemas: options.ignore_schemas)
 diff.run_compare
 puts diff.output
