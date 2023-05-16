@@ -10,7 +10,7 @@ module PgDiff
       @indexes = {}
       @atlist = []
 
-      att_query = <<-EOT
+      att_query = <<~EOT
         select attname, format_type(atttypid, atttypmod) as a_type, attnotnull,  pg_get_expr(adbin, attrelid) as a_default
         from pg_attribute left join pg_attrdef  on (adrelid = attrelid and adnum = attnum)
         where attrelid = '#{schema}.#{table_name}'::regclass and not attisdropped and attnum > 0
@@ -25,7 +25,7 @@ module PgDiff
         @atlist << attname
       end
 
-      ind_query = <<-EOT
+      ind_query = <<~EOT
         select indexrelid::regclass as indname, pg_get_indexdef(indexrelid) as def
         from pg_index where indrelid = '#{schema}.#{table_name}'::regclass and not indisprimary
       EOT
@@ -35,7 +35,7 @@ module PgDiff
         @indexes[name] = value
       end
 
-      cons_query = <<-EOT
+      cons_query = <<~EOT
         select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid = '#{schema}.#{table_name}'::regclass
       EOT
       conn.query(cons_query).each do |tuple|

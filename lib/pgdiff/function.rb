@@ -5,7 +5,7 @@ module PgDiff
       @language = tuple['language_name']
       @src = tuple['source_code']
       @returns_set = tuple['returns_set']
-      @return_type = format_type(conn, tuple['return_type'])
+      @return_type = tuple['return_type']
       @tipes = tuple['function_args'].split(" ")
       if tuple['function_arg_names'] && tuple['function_arg_names'] =~ /^\{(.*)\}$/
         @arnames = $1.split(',')
@@ -33,9 +33,9 @@ module PgDiff
     end
 
     def definition
-      <<-EOT
-  CREATE OR REPLACE FUNCTION #{@name} (#{@arglist}) RETURNS #{@returns_set ? 'SETOF' : ''} #{@return_type} AS $_$#{@src}$_$ LANGUAGE '#{@language}' #{@volatile}#{@strict}#{@secdef};
-  EOT
+      <<~EOT
+        CREATE OR REPLACE FUNCTION #{@name} (#{@arglist}) RETURNS #{@returns_set ? 'SETOF' : ''} #{@return_type} AS $_$#{@src}$_$ LANGUAGE '#{@language}' #{@volatile}#{@strict}#{@secdef};
+      EOT
     end
 
     def == (other)
@@ -43,13 +43,13 @@ module PgDiff
     end
 
     def format_type(conn, oid)
-      t_query = <<-EOT
-      SELECT pg_catalog.format_type(pg_type.oid, typtypmod) AS type_name
-       FROM pg_catalog.pg_type
-       JOIN pg_catalog.pg_namespace ON (pg_namespace.oid = typnamespace)
-       WHERE pg_type.oid =
+      type_query = <<~EOT
+        SELECT pg_catalog.format_type(pg_type.oid, typtypmod) AS type_name
+        FROM pg_catalog.pg_type
+        JOIN pg_catalog.pg_namespace ON (pg_namespace.oid = typnamespace)
+        WHERE pg_type.oid = #{oid}
       EOT
-      tuple = conn.query(t_query + oid.to_s).first
+      tuple = conn.query(type_query).first
       tuple['type_name']
     end
   end

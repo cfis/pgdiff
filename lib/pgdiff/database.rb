@@ -2,14 +2,15 @@ module PgDiff
   class Database
     attr_accessor :tables, :views, :sequences, :schemas, :domains, :rules, :functions, :triggers
 
-    def initialize(conn)
-      cls_query = <<-EOT
+    def initialize(connection, ignore_schemas: [])
+      ignore_schemas += ['pg_catalog', 'pg_toast', 'information_schema']
+      cls_query = <<~EOT
         SELECT n.nspname, c.relname, c.relkind
         FROM pg_catalog.pg_class c
         LEFT JOIN pg_catalog.pg_user u ON u.usesysid = c.relowner
         LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
         WHERE c.relkind IN ('r','S','v')
-        AND n.nspname NOT IN ('pg_catalog', 'pg_toast', 'information_schema')
+          AND n.nspname NOT IN (#{ignore_schemas.join(', ')})
         ORDER BY 1,2;
       EOT
       @views = {}
@@ -21,23 +22,24 @@ module PgDiff
       @rules = {}
       @triggers = {}
 
-      conn.query(cls_query).each do |tuple|
+      connection.query(cls_query).each do |tuple|
         schema = tuple['nspname']
         relname = tuple['relname']
         relkind = tuple['relkind']
+
         case relkind
           when 'r'
-            @tables["#{schema}.#{relname}"] = Table.new(conn, schema, relname)
+            @tables["#{schema}.#{relname}"] = Table.new(connection, schema, relname)
           when 'v'
-            @views["#{schema}.#{relname}"] = View.new(conn, schema, relname)
+            @views["#{schema}.#{relname}"] = View.new(connection, schema, relname)
           when 'S'
-            @sequences["#{schema}.#{relname}"] = Sequence.new(conn, schema, relname)
+            @sequences["#{schema}.#{relname}"] = Sequence.new(connection, schema, relname)
         end
       end
 
-      domain_qry = <<-EOT
+      domain_qry = <<~EOT
       SELECT n.nspname, t.typname,  pg_catalog.format_type(t.typbasetype, t.typtypmod) || ' ' ||
-         CASE WHEN t.typnotnull AND t.typdefault IS NOT NULL THEN 'not null default '||t.typdefault
+         CASE WHEN t.typnotnull AND t.typdefault IS NOT NULL THEN 'not null default '|| t.typdefault
               WHEN t.typnotnull AND t.typdefault IS NULL THEN 'not null'
               WHEN NOT t.typnotnull AND t.typdefault IS NOT NULL THEN 'default '|| t.typdefault
               ELSE ''
@@ -45,24 +47,31 @@ module PgDiff
       FROM pg_catalog.pg_type t
          LEFT JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
       WHERE t.typtype = 'd'
+        AND 
       ORDER BY 1, 2
       EOT
-      conn.query(domain_qry).each do |tuple|
+      connection.query(domain_qry).each do |tuple|
         schema = tuple['nspname']
+        if ignore_schemas.include?(schema)
+          next
+        end
+
         typename = tuple['typname']
         value = tuple['def']
         @domains["#{schema}.#{typename}"] = value
       end
 
-      schema_qry = <<-EOT
-        select nspname from pg_namespace
+      schema_qry = <<~EOT
+        SELECT nspname
+        FROM pg_namespace
+        WHERE nspname NOT IN (#{ignore_schemas.join(', ')})
       EOT
-      conn.query(schema_qry).each do |tuple|
+      connection.query(schema_qry).each do |tuple|
         schema = tuple['nspname']
         @schemas[schema] = schema
       end
 
-      func_query = <<-EOT
+      func_query = <<~EOT
        SELECT proname AS function_name
        , nspname AS namespace
        , lanname AS language_name
@@ -82,29 +91,29 @@ module PgDiff
        AND proname != 'plpgsql_validator'
       EOT
 
-      conn.exec(func_query).each_with_index do |tuple, i|
-        func = Function.new(conn, tuple)
+      connection.exec(func_query).each_with_index do |tuple, i|
+        func = Function.new(connection, tuple)
         @functions[func.signature] = func
       end
 
-      rule_query = <<-EOT
+      rule_query = <<~EOT
       select  schemaname || '.' ||  tablename || '.' || rulename as rule_name,
               schemaname || '.' ||  tablename as tab_name,
         rulename, definition
       from pg_rules
       where schemaname !~ 'pg_catalog|information_schema'
       EOT
-      conn.exec(rule_query).each do |tuple|
+      connection.exec(rule_query).each do |tuple|
         @rules[tuple['rule_name']] = Rule.new(tuple['tab_name'], tuple['rulename'], tuple['definition'])
       end
 
-      trigger_query =  <<-EOT
+      trigger_query =  <<~EOT
       select nspname || '.' || relname as tgtable, tgname, pg_get_triggerdef(t.oid) as tg_def
       from pg_trigger t join pg_class c ON (tgrelid = c.oid ) JOIN pg_namespace n ON (c.relnamespace = n.oid)
       where not tgisinternal
       and nspname !~ 'pg_catalog|information_schema'
       EOT
-      conn.exec(trigger_query).each do |tuple|
+      connection.exec(trigger_query).each do |tuple|
         @triggers[tuple['tgtable'] + "." + tuple['tgname']] = Trigger.new(tuple['tgtable'], tuple['tgname'], tuple['tg_def'])
       end
     end
