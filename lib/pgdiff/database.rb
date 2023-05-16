@@ -3,8 +3,11 @@ module PgDiff
     attr_accessor :tables, :views, :sequences, :schemas, :domains, :rules, :functions, :triggers
 
     def initialize(connection, ignore_schemas: [])
-      puts "Analyzing #{connection}"
-      ignore_schemas += %w['pg_catalog' 'pg_toast' 'information_schema']
+      # Combine ignore schemas
+      ignore_schemas += ['pg_catalog', 'pg_toast', 'information_schema']
+      # Now single quote them
+      ignore_schemas = ignore_schemas.map {|schema_name| "'#{schema_name}'"}
+
       cls_query = <<~EOT
         SELECT n.nspname, c.relname, c.relkind
         FROM pg_catalog.pg_class c
@@ -23,7 +26,6 @@ module PgDiff
       @rules = {}
       @triggers = {}
 
-      puts "Querying Catalog..."
       connection.query(cls_query).each do |tuple|
         schema = tuple['nspname']
         relname = tuple['relname']
@@ -39,7 +41,6 @@ module PgDiff
         end
       end
 
-      puts "Querying Domains..."
       domain_qry = <<~EOT
       SELECT n.nspname, t.typname,  pg_catalog.format_type(t.typbasetype, t.typtypmod) || ' ' ||
          CASE WHEN t.typnotnull AND t.typdefault IS NOT NULL THEN 'not null default '|| t.typdefault
@@ -60,7 +61,6 @@ module PgDiff
         @domains["#{schema}.#{typename}"] = value
       end
 
-      puts "Querying Schemas..."
       schema_qry = <<~EOT
         SELECT nspname
         FROM pg_namespace
@@ -71,14 +71,12 @@ module PgDiff
         @schemas[schema] = schema
       end
 
-      puts "Querying Functions..."
       func_query = <<~EOT
        SELECT proname AS function_name,
          nspname AS namespace,
          lanname AS language_name,
          pg_catalog.obj_description(pg_proc.oid, 'pg_proc') AS comment,
-         proargtypes AS function_args,
-         proargnames AS function_arg_names,
+         pg_get_function_arguments(pg_proc.oid) AS function_arguments,
          prosrc AS source_code,
          proretset AS returns_set,
          pg_catalog.format_type(prorettype, pg_type.typtypmod) AS return_type,
@@ -99,7 +97,6 @@ module PgDiff
         @functions[func.signature] = func
       end
 
-      puts "Querying Rules..."
       rule_query = <<~EOT
         SELECT  schemaname || '.' ||  tablename || '.' || rulename AS rule_name,
                 schemaname || '.' ||  tablename AS tab_name,
@@ -111,7 +108,6 @@ module PgDiff
         @rules[tuple['rule_name']] = Rule.new(tuple['tab_name'], tuple['rulename'], tuple['definition'])
       end
 
-      puts "Querying Triggers..."
       trigger_query =  <<~EOT
         SELECT nspname || '.' || relname as tgtable, tgname, pg_get_triggerdef(pg_trigger.oid) as tg_def
         FROM pg_trigger

@@ -6,19 +6,7 @@ module PgDiff
       @src = tuple['source_code']
       @returns_set = tuple['returns_set']
       @return_type = tuple['return_type']
-      @tipes = tuple['function_args'].split(" ")
-      if tuple['function_arg_names'] && tuple['function_arg_names'] =~ /^\{(.*)\}$/
-        @arnames = $1.split(',')
-      elsif tuple['function_arg_names'].is_a? Array # my version of ruby-postgres
-        @arnames = tuple['function_arg_names']
-      else
-        @arnames = [""] * @tipes.length
-      end
-      alist = []
-      @tipes.each_with_index do |typ,idx|
-        alist << (@arnames[idx] + " " + format_type(conn, typ))
-      end
-      @arglist = alist.join(" , ")
+      @arglist = tuple["function_arguments"]
       @strict = tuple['proisstrict'] ? ' STRICT' : ''
       @secdef = tuple['prosecdef'] ? ' SECURITY DEFINER' : ''
       @volatile = case tuple['provolatile']
