@@ -81,7 +81,7 @@ module PgDiff
          proargnames AS function_arg_names,
          prosrc AS source_code,
          proretset AS returns_set,
-         prorettype AS return_type,
+         pg_catalog.format_type(prorettype, pg_type.typtypmod) AS return_type,
          provolatile,
          proisstrict,
          prosecdef
