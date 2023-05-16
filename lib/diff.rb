@@ -267,7 +267,7 @@ module PgDiff
 
       add_script(:tables_change ,   "--  [#{old_table.name}] attribute order changed") unless order.empty?
       order.each do |attname|
-        add_script(:tables_change , "     #{attname}.  Old index: #{old_table.attribute_index(attname)}, New index: #{new_table.attribute_index(attname)}")
+        add_script(:tables_change , "--  #{attname}.  Old index: #{old_table.attribute_index(attname)}, New index: #{new_table.attribute_index(attname)}")
       end
     end
 
