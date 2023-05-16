@@ -1,8 +1,10 @@
+require 'stringio'
+
 module PgDiff
   class Diff
-    def initialize(old_db_spec, new_db_spec, ignore_schemas: [])
-      @old_conn = PG::Connection.new(old_db_spec)
-      @new_conn = PG::Connection.new(new_db_spec)
+    def initialize(source_db_spec, target_db_spec, ignore_schemas: [])
+      @source_db = PG::Connection.new(source_db_spec)
+      @target_db = PG::Connection.new(target_db_spec)
       @ignore_schemas = ignore_schemas
 
       @sections = [
@@ -10,6 +12,8 @@ module PgDiff
         :domains_create,
         :schemas_drop,
         :schemas_create,
+        :extensions_create,
+        :extensions_drop,
         :tables_drop,
         :tables_change,
         :tables_create,
@@ -34,9 +38,10 @@ module PgDiff
     end
 
     def run_compare
-      @old_database = Database.new(@old_conn, ignore_schemas: @ignore_schemas)
-      @new_database = Database.new(@new_conn, ignore_schemas: @ignore_schemas)
+      @old_database = Database.new(@source_db, ignore_schemas: @ignore_schemas)
+      @new_database = Database.new(@target_db, ignore_schemas: @ignore_schemas)
       compare_schemas
+      compare_extensions
       compare_domains
       compare_sequences
       compare_triggers_drop
@@ -60,6 +65,15 @@ module PgDiff
       end
       @new_database.schemas.keys.each do |name|
         add_script(:schemas_create ,  "CREATE SCHEMA #{name};") unless @old_database.schemas.has_key?(name)
+      end
+    end
+
+    def compare_extensions
+      @old_database.extensions.each do |extension|
+        add_script(:extensions_drop ,  "DROP EXTENSION #{extension.schema}.#{extension.name}; -- Version is #{extension.version}") unless @new_database.extensions.include?(extension)
+      end
+      @new_database.extensions.each do |extension|
+        add_script(:extensions_create ,  "CREATE EXTENSION #{extension.name} WITH SCHEMA #{extension.schema} VERSION #{extension.version};") unless @old_database.extensions.include?(extension)
       end
     end
 
@@ -200,17 +214,17 @@ module PgDiff
     end
 
     def output
-      out = []
+      out = StringIO.new
       @sections.each do |sect|
-        if @script[sect].empty?
-           out << "-- [SKIP SECTION : #{sect.to_s.upcase}] : no changes\n"
-        else
-           out << "-- [START SECTION : #{sect.to_s.upcase}]"
-           out += @script[sect]
-           out << "-- [END SECTION : #{sect.to_s.upcase}]\n"
+        unless @script[sect].empty?
+           out << "-- **** #{sect.to_s.upcase} ****" << "\n"
+           @script[sect].each do |script|
+             out << script << "\n"
+           end
+           out << "\n"
         end
       end
-      out.join("\n")
+      out.string
     end
 
     def diff_attributes(old_table, new_table)
@@ -243,33 +257,33 @@ module PgDiff
       end
       add_script(:tables_change ,  "--  [#{old_table.name}] added attributes") unless added.empty?
       added.each do |attname|
-        add_script(:tables_change ,  "ALTER TABLE #{old_table.name} ADD COLUMN #{new_table.attributes[attname].definition};")
+        add_script(:tables_change ,  "    ALTER TABLE #{old_table.name} ADD COLUMN #{new_table.attributes[attname].definition};")
       end
       add_script(:tables_change ,  "--  [#{old_table.name}] changed attributes") unless changed.empty?
       changed.each do |attname|
         old_att = old_table.attributes[attname]
         new_att = new_table.attributes[attname]
-        add_script(:tables_change ,  "-- attribute: #{attname}")
-        add_script(:tables_change ,  "-- OLD : #{old_att.definition}")
-        add_script(:tables_change ,  "-- NEW : #{new_att.definition}")
+        add_script(:tables_change ,  "--   attribute: #{attname}")
+        add_script(:tables_change ,  "--     OLD : #{old_att.definition}")
+        add_script(:tables_change ,  "--     NEW : #{new_att.definition}")
         if old_att.type_def != new_att.type_def
-          add_script(:tables_change ,  "ALTER TABLE #{old_table.name} ALTER COLUMN #{attname} TYPE #{new_att.type_def};")
+          add_script(:tables_change ,  "      ALTER TABLE #{old_table.name} ALTER COLUMN #{attname} TYPE #{new_att.type_def};")
         end
         if old_att.default != new_att.default
           if new_att.default.nil?
-            add_script(:tables_change ,  "ALTER TABLE #{old_table.name} ALTER COLUMN #{attname} DROP DEFAULT;")
+            add_script(:tables_change ,  "       ALTER TABLE #{old_table.name} ALTER COLUMN #{attname} DROP DEFAULT;")
           else
-            add_script(:tables_change ,  "ALTER TABLE #{old_table.name} ALTER COLUMN #{attname} SET DEFAULT #{new_att.default};")
+            add_script(:tables_change ,  "       ALTER TABLE #{old_table.name} ALTER COLUMN #{attname} SET DEFAULT #{new_att.default};")
           end
         end
         if old_att.notnull != new_att.notnull
-          add_script(:tables_change ,  "ALTER TABLE #{old_table.name} ALTER COLUMN #{attname} #{new_att.notnull ? 'SET' : 'DROP'} NOT NULL;")
+          add_script(:tables_change ,  "       ALTER TABLE #{old_table.name} ALTER COLUMN #{attname} #{new_att.notnull ? 'SET' : 'DROP'} NOT NULL;")
         end
       end
 
       add_script(:tables_change ,   "--  [#{old_table.name}] attribute order changed") unless order.empty?
       order.each do |attname|
-        add_script(:tables_change , "--  #{attname}.  Old index: #{old_table.attribute_index(attname)}, New index: #{new_table.attribute_index(attname)}")
+        add_script(:tables_change , "--    #{attname}.  Old index: #{old_table.attribute_index(attname)}, New index: #{new_table.attribute_index(attname)}")
       end
     end
 

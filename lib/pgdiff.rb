@@ -1,6 +1,7 @@
 require 'pgdiff/database'
 require 'pgdiff/table'
 require 'pgdiff/attribute'
+require 'pgdiff/extension'
 require 'pgdiff/view'
 require 'pgdiff/sequence'
 require 'pgdiff/rule'
