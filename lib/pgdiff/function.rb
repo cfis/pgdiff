@@ -24,16 +24,16 @@ module PgDiff
          AND proname != 'plpgsql_validator'
       EOT
 
-      connection.exec(query).map do |hash|
-        Function.new(hash['namespace'], hash['function_name'],
-                     arguments: hash["function_arguments"],
-                     language: hash['language_name'],
-                     source: hash['source_code'],
-                     returns_set: hash['returns_set'],
-                     return_type: hash['return_type'],
-                     strict: hash['proisstrict'] ? 'STRICT' : '',
-                     secdef: hash['prosecdef'] ? 'SECURITY DEFINER' : '',
-                     volatile: case hash['provolatile']
+      connection.exec(query).map do |record|
+        Function.new(record['namespace'], record['function_name'],
+                     arguments: record["function_arguments"],
+                     language: record['language_name'],
+                     source: record['source_code'],
+                     returns_set: record['returns_set'],
+                     return_type: record['return_type'],
+                     strict: record['proisstrict'] ? 'STRICT' : '',
+                     secdef: record['prosecdef'] ? 'SECURITY DEFINER' : '',
+                     volatile: case record['provolatile']
                                  when 'i' then 'IMMUTABLE'
                                  when 's' then 'STABLE'
                                  else ''

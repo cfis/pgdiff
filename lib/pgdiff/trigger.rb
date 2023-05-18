@@ -12,8 +12,8 @@ module PgDiff
           AND nspname NOT IN (#{ignore_schemas.join(', ')})
       EOT
 
-      connection.exec(query).map do |hash|
-        Trigger.new(hash['tgtable'], hash['tgname'], hash['tg_def'])
+      connection.exec(query).map do |record|
+        Trigger.new(record['tgtable'], record['tgname'], record['tg_def'])
       end
     end
 

@@ -13,10 +13,10 @@ module PgDiff
         ORDER BY 1,2;
       EOT
 
-      connection.query(query).map do |hash|
-        oid = hash['oid']
-        schema = hash['nspname']
-        name = hash['relname']
+      connection.query(query).map do |record|
+        oid = record['oid']
+        schema = record['nspname']
+        name = record['relname']
         view_query = <<~EOT
           SELECT pg_catalog.pg_get_viewdef(#{oid}, true)
         EOT

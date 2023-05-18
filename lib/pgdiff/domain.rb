@@ -17,8 +17,8 @@ module PgDiff
         ORDER BY 1, 2
       EOT
 
-      connection.query(query).map do |hash|
-        Domain.new(hash['nspname'], hash['typname'], hash['def'])
+      connection.query(query).map do |record|
+        Domain.new(record['nspname'], record['typname'], record['def'])
       end
     end
 
