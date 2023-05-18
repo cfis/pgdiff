@@ -19,7 +19,6 @@ module PgDiff
 
       connection.query(query).map do |hash|
         Domain.new(hash['nspname'], hash['typname'], hash['def'])
-        @domains["#{schema}.#{typename}"] = value
       end
     end
 
@@ -33,9 +32,19 @@ module PgDiff
       "#{self.schema}.#{self.name}"
     end
 
-    def ==(other)
-      self.schema == other.schema &&
-        self.name == other.name
+    def equal?(other)
+      self.qualified_name == other.qualified_name
+    end
+
+    def drop_statement
+      "DROP DOMAIN #{qualified_name} CASCADE;"
+    end
+
+    def create_statement
+      <<~EOT
+        CREATE DOMAIN #{name} AS
+         #{definition};"
+      EOT
     end
   end
 end

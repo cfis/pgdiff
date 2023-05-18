@@ -77,18 +77,12 @@ module PgDiff
     end
 
     def compare_domains
-      @old_database.domains.keys.each do |name|
-        add_script(:domains_drop ,  "DROP DOMAIN #{name} CASCADE;") unless @new_database.domains.has_key?(name)
+      @old_database.domains.difference(@new_database.domains).each do |domain|
+        add_script(:domains_drop, domain.drop_statement)
       end
-      @new_database.domains.each do |name, df|
-        add_script(:domains_create ,  "CREATE DOMAIN #{name} AS #{df};") unless @old_database.domains.has_key?(name)
-        old_domain = @old_database.domains[name]
-        if old_domain && old_domain != df
-           add_script(:domains_drop, "DROP DOMAIN #{name} CASCADE;")
-           add_script(:domains_create,  "-- [changed domain] :")
-           add_script(:domains_create,  "-- OLD: #{old_domain}")
-           add_script(:domains_create,  "CREATE DOMAIN #{name} AS #{df};")
-        end
+
+      @new_database.domains.difference(@old_database.domains).each do |domain|
+        add_script(:domains_create, domain.create_statement)
       end
     end
 

@@ -47,10 +47,7 @@ module PgDiff
     end
 
     def load_domains(connection)
-      domains = Domain.from_database(connection, @ignore_schemas)
-      domains.each do |domain|
-        @domains[domain.qualified_name] = domain
-      end
+      @domains = Domain.from_database(connection, @ignore_schemas)
     end
 
     def load_extensions(connection)
