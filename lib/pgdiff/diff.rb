@@ -44,14 +44,11 @@ module PgDiff
       compare_extensions
       compare_domains
       compare_sequences
-      compare_triggers_drop
-      compare_rules_drop
-      compare_views_drop
+      compare_triggers
+      compare_rules
+      compare_views
       compare_tables
-      compare_views_create
       compare_functions
-      compare_rules_create
-      compare_triggers_create
       compare_table_constraints
     end
 
@@ -65,17 +62,17 @@ module PgDiff
       end
 
       @new_database.schemas.difference(@old_database.schemas).each do |schema|
-        add_script(:schemas_drop, schema.create_statement)
+        add_script(:schemas_create, schema.create_statement)
       end
     end
 
     def compare_extensions
       @old_database.extensions.difference(@new_database.extensions).each do |extension|
-        add_script(:schemas_drop, extension.drop_statement)
+        add_script(:extensions_drop, extension.drop_statement)
       end
 
       @new_database.extensions.difference(@old_database.extensions).each do |extension|
-        add_script(:schemas_drop, extension.create_statement)
+        add_script(:extensions_create, extension.create_statement)
       end
     end
 
@@ -101,7 +98,7 @@ module PgDiff
       end
 
       @new_database.sequences.difference(@old_database.sequences).each do |sequence|
-        add_script(:schemas_drop, sequence.create_statement)
+        add_script(:schemas_create, sequence.create_statement)
       end
     end
 
@@ -121,13 +118,11 @@ module PgDiff
       end
     end
 
-    def compare_rules_drop
+    def compare_rules
       @old_database.rules.each do |name, rule|
         add_script(:rules_drop ,  "DROP RULE #{rule.name} ON #{rule.name} CASCADE;") unless @new_database.rules.has_key?(name)
       end
-    end
 
-    def compare_rules_create
       @new_database.rules.each do |name, rule|
         add_script(:rules_create ,   rule.definition) unless @old_database.rules.has_key?(name)
         old_rule = @old_database.rules[name]
@@ -140,13 +135,11 @@ module PgDiff
       end
     end
 
-    def compare_triggers_drop
+    def compare_triggers
       @old_database.triggers.each do |name, trigger|
         add_script(:triggers_drop ,  "DROP trigger #{trigger.name} ON #{trigger.name} CASCADE;") unless @new_database.triggers.has_key?(name)
       end
-    end
 
-    def compare_triggers_create
       @new_database.triggers.each do |name, trigger|
         add_script(:triggers_create ,   trigger.definition) unless @old_database.triggers.has_key?(name)
         old_trigger = @old_database.triggers[name]
@@ -159,13 +152,11 @@ module PgDiff
       end
     end
 
-    def compare_views_drop
+    def compare_views
       @old_database.views.keys.each do |name|
         add_script(:views_drop ,  "DROP VIEW #{name};") unless @new_database.views.has_key?(name)
       end
-    end
 
-    def compare_views_create
       @new_database.views.each do |name, df|
         add_script(:views_create , df.create_statement) unless @old_database.views.has_key?(name)
         old_view = @old_database.views[name]
