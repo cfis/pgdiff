@@ -61,20 +61,21 @@ module PgDiff
 
     def compare_schemas
       @old_database.schemas.difference(@new_database.schemas).each do |schema|
-        add_script(:schemas_drop ,  schema.drop_statement)
+        add_script(:schemas_drop, schema.drop_statement)
       end
 
       @new_database.schemas.difference(@old_database.schemas).each do |schema|
-        add_script(:schemas_drop ,  schema.create_statement)
+        add_script(:schemas_drop, schema.create_statement)
       end
     end
 
     def compare_extensions
-      @old_database.extensions.each do |extension|
-        add_script(:extensions_drop ,  "DROP EXTENSION #{extension.schema}.#{extension.name}; -- Version is #{extension.version}") unless @new_database.extensions.include?(extension)
+      @old_database.extensions.difference(@new_database.extensions).each do |extension|
+        add_script(:schemas_drop, extension.drop_statement)
       end
-      @new_database.extensions.each do |extension|
-        add_script(:extensions_create ,  "CREATE EXTENSION #{extension.name} WITH SCHEMA #{extension.schema} VERSION #{extension.version};") unless @old_database.extensions.include?(extension)
+
+      @new_database.extensions.difference(@old_database.extensions).each do |extension|
+        add_script(:schemas_drop, extension.create_statement)
       end
     end
 

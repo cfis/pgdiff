@@ -21,10 +21,21 @@ module PgDiff
       @version = version
     end
 
-    def ==(other)
-      self.schema == other.schema &&
-        self.name == other.name &&
+    def qualified_name
+      "#{self.schema}.#{self.name}"
+    end
+
+    def equal?(other)
+      self.qualified_name == other.qualified_name &&
         self.version == other.version
+    end
+
+    def create_statement
+      "CREATE EXTENSION #{name} WITH SCHEMA #{schema} VERSION #{version};"
+    end
+
+    def drop_statement
+      "DROP EXTENSION #{qualified_name};"
     end
   end
 end
