@@ -1,5 +1,7 @@
 module PgDiff
   class Function
+    attr_reader :schema, :name, :arguments, :source
+
     def self.from_database(connection, ignore_schemas)
       query = <<~EOT
        SELECT proname AS function_name,
@@ -23,38 +25,61 @@ module PgDiff
       EOT
 
       connection.exec(query).map do |hash|
-        Function.new(hash)
+        Function.new(hash['namespace'], hash['function_name'],
+                     arguments: hash["function_arguments"],
+                     language: hash['language_name'],
+                     source: hash['source_code'],
+                     returns_set: hash['returns_set'],
+                     return_type: hash['return_type'],
+                     strict: hash['proisstrict'] ? 'STRICT' : '',
+                     secdef: hash['prosecdef'] ? 'SECURITY DEFINER' : '',
+                     volatile: case hash['provolatile']
+                                 when 'i' then 'IMMUTABLE'
+                                 when 's' then 'STABLE'
+                                 else ''
+                                 end)
       end
     end
 
-    def initialize(tuple)
-      @name = tuple['namespace'] + "." + tuple['function_name']
-      @language = tuple['language_name']
-      @src = tuple['source_code']
-      @returns_set = tuple['returns_set']
-      @return_type = tuple['return_type']
-      @arglist = tuple["function_arguments"]
-      @strict = tuple['proisstrict'] ? ' STRICT' : ''
-      @secdef = tuple['prosecdef'] ? ' SECURITY DEFINER' : ''
-      @volatile = case tuple['provolatile']
-        when 'i' then ' IMMUTABLE'
-        when 's' then ' STABLE'
-        else ''
-      end
+    def initialize(schema, name,
+                   arguments:, language:, source:, returns_set:, return_type:,
+                   strict:, secdef:, volatile:)
+      @schema = schema
+      @name = name
+      @arguments = arguments
+      @language = language
+      @source = source
+      @returns_set = returns_set
+      @return_type = return_type
+      @strict = strict
+      @secdef = secdef
+      @volatile = volatile
+    end
+
+    def eql?(other)
+      self.signature == other.signature &&
+        self.source == other.source
+    end
+
+    def qualified_name
+      "#{self.schema}.#{self.name}"
     end
 
     def signature
-      "#{@name}(#{@arglist})"
+      "#{qualified_name}(#{arguments})"
     end
 
-    def definition
+    def create_statement
       <<~EOT
-        CREATE OR REPLACE FUNCTION #{@name} (#{@arglist}) RETURNS #{@returns_set ? 'SETOF' : ''} #{@return_type} AS $_$#{@src}$_$ LANGUAGE '#{@language}' #{@volatile}#{@strict}#{@secdef};
+        CREATE OR REPLACE FUNCTION #{qualified_name}(#{arguments})
+        RETURNS #{@returns_set ? 'SETOF' : ''} #{@return_type} AS $$
+        #{@source}
+        $$ LANGUAGE '#{@language}' #{@volatile} #{@strict} #{@secdef};
       EOT
     end
 
-    def == (other)
-      definition == other.definition
+    def drop_statement
+      "DROP FUNCTION #{qualified_name} CASCADE;"
     end
   end
 end

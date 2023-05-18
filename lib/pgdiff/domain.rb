@@ -32,7 +32,7 @@ module PgDiff
       "#{self.schema}.#{self.name}"
     end
 
-    def equal?(other)
+    def eql?(other)
       self.qualified_name == other.qualified_name
     end
 

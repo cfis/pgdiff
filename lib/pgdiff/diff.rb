@@ -13,6 +13,7 @@ module PgDiff
         :schemas_drop,
         :schemas_create,
         :extensions_create,
+        :extensions_alter,
         :extensions_drop,
         :tables_drop,
         :tables_change,
@@ -67,6 +68,20 @@ module PgDiff
     end
 
     def compare_extensions
+      @old_database.extensions.intersection(@new_database.extensions).each do |old_extension|
+        new_extension = @new_database.extensions.find do |an_extension|
+          old_extension.qualified_name == an_extension.qualified_name
+        end
+        if old_extension.version < new_extension.version
+          # Upgrade
+          add_script(:extensions_alter, new_extension.alter_statement)
+        elsif old_extension.version > new_extension.version
+          # Downgrade
+          add_script(:extensions_drop, old_extension.drop_statement)
+          add_script(:extensions_create, new_extension.create_statement)
+        end
+      end
+
       @old_database.extensions.difference(@new_database.extensions).each do |extension|
         add_script(:extensions_drop, extension.drop_statement)
       end
@@ -97,18 +112,12 @@ module PgDiff
     end
 
     def compare_functions
-      @old_database.functions.keys.each do |name|
-        add_script(:functions_drop ,  "DROP FUNCTION #{name} CASCADE;") unless @new_database.functions.has_key?(name)
+      @old_database.functions.difference(@new_database.functions).each do |function|
+        add_script(:functions_drop, function.drop_statement)
       end
-      @new_database.functions.each do |name, func|
-        add_script(:functions_create ,   func.definition) unless @old_database.functions.has_key?(name)
-        old_function = @old_database.functions[name]
-        if old_function && old_function.definition != func.definition
-          add_script(:functions_create , '-- [changed function] :')
-          add_script(:functions_create , '-- OLD :')
-          add_script(:functions_create ,  old_function.definition.gsub(/^/, "-->  ") )
-          add_script(:functions_create ,   func.definition)
-        end
+
+      @new_database.functions.difference(@old_database.functions).each do |function|
+        add_script(:functions_create, function.create_statement)
       end
     end
 

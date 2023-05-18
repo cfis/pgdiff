@@ -36,7 +36,7 @@ module PgDiff
     end
 
     def drop_statement
-      "DROP SEQUENCE #{@name} CASCADE;"
+      "DROP SEQUENCE #{qualified_name} CASCADE;"
     end
   end
 end

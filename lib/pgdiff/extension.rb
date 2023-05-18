@@ -18,16 +18,15 @@ module PgDiff
     def initialize(schema, name, version)
       @schema = schema
       @name = name
-      @version = version
+      @version = Gem::Version.new(version)
     end
 
     def qualified_name
       "#{self.schema}.#{self.name}"
     end
 
-    def equal?(other)
-      self.qualified_name == other.qualified_name &&
-        self.version == other.version
+    def eql?(other)
+      self.qualified_name == other.qualified_name
     end
 
     def create_statement
@@ -35,7 +34,11 @@ module PgDiff
     end
 
     def drop_statement
-      "DROP EXTENSION #{qualified_name};"
+      "DROP EXTENSION #{qualified_name}; -- Version #{version}"
+    end
+
+    def alter_statement
+      "ALTER EXTENSION #{qualified_name} UPDATE TO #{version};"
     end
   end
 end

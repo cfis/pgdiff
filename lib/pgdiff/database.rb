@@ -3,15 +3,15 @@ module PgDiff
     attr_accessor :extensions, :tables, :views, :sequences, :schemas, :domains, :rules, :functions, :triggers
 
     def initialize(connection, ignore_schemas: [])
+      @domains = []
       @extensions = []
-      @views = {}
-      @tables = {}
-      @sequences = {}
-      @schemas = {}
-      @domains = {}
-      @functions = {}
+      @functions = []
       @rules = {}
+      @schemas = []
+      @sequences = []
+      @tables = {}
       @triggers = {}
+      @views = {}
 
       # Combine ignore schemas and single quote them
       ignore_schemas += ['pg_catalog', 'pg_toast', 'information_schema']
@@ -59,10 +59,7 @@ module PgDiff
     end
 
     def load_functions(connection)
-      functions = Function.from_database(connection, @ignore_schemas)
-      functions.each do |function|
-        @functions[function.signature] = function
-      end
+      @functions = Function.from_database(connection, @ignore_schemas)
     end
 
     def load_rules(connection)
