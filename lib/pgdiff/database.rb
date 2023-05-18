@@ -63,10 +63,7 @@ module PgDiff
     end
 
     def load_rules(connection)
-      rules = Rule.from_database(connection, @ignore_schemas)
-      rules.each do |rule|
-        @rules[rule.name] = rule
-      end
+      @rules = Rule.from_database(connection, @ignore_schemas)
     end
 
     def load_triggers(connection)

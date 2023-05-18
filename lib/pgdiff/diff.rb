@@ -122,19 +122,12 @@ module PgDiff
     end
 
     def compare_rules
-      @old_database.rules.each do |name, rule|
-        add_script(:rules_drop ,  "DROP RULE #{rule.name} ON #{rule.name} CASCADE;") unless @new_database.rules.has_key?(name)
+      @old_database.rules.difference(@new_database.rules).each do |rule|
+        add_script(:rules_drop, rule.drop_statement)
       end
 
-      @new_database.rules.each do |name, rule|
-        add_script(:rules_create ,   rule.definition) unless @old_database.rules.has_key?(name)
-        old_rule = @old_database.rules[name]
-        if old_rule && old_rule != rule
-          add_script(:rules_drop ,  "DROP RULE #{rule.name} ON #{rule.name} CASCADE;")
-          add_script(:rules_create ,  "-- [changed rule] :")
-          add_script(:rules_create ,  "-- OLD: #{old_rule.definition}")
-          add_script(:rules_create ,   rule.definition )
-        end
+      @new_database.rules.difference(@old_database.rules).each do |rule|
+        add_script(:rules_create, rule.create_statement)
       end
     end
 
