@@ -1,6 +1,33 @@
 module PgDiff
   class Function
-    def initialize(conn, tuple)
+    def self.from_database(connection, ignore_schemas)
+      query = <<~EOT
+       SELECT proname AS function_name,
+         nspname AS namespace,
+         lanname AS language_name,
+         pg_catalog.obj_description(pg_proc.oid, 'pg_proc') AS comment,
+         pg_get_function_arguments(pg_proc.oid) AS function_arguments,
+         prosrc AS source_code,
+         proretset AS returns_set,
+         pg_catalog.format_type(prorettype, pg_type.typtypmod) AS return_type,
+         provolatile,
+         proisstrict,
+         prosecdef
+       FROM pg_catalog.pg_proc
+       JOIN pg_catalog.pg_language ON (pg_language.oid = prolang)
+       JOIN pg_catalog.pg_namespace ON (pronamespace = pg_namespace.oid)
+       JOIN pg_catalog.pg_type ON (prorettype = pg_type.oid)
+       WHERE pg_namespace.nspname NOT IN (#{ignore_schemas.join(', ')})
+         AND proname != 'plpgsql_call_handler'
+         AND proname != 'plpgsql_validator'
+      EOT
+
+      connection.exec(query).map do |hash|
+        Function.new(hash)
+      end
+    end
+
+    def initialize(tuple)
       @name = tuple['namespace'] + "." + tuple['function_name']
       @language = tuple['language_name']
       @src = tuple['source_code']
@@ -28,17 +55,6 @@ module PgDiff
 
     def == (other)
       definition == other.definition
-    end
-
-    def format_type(conn, oid)
-      type_query = <<~EOT
-        SELECT pg_catalog.format_type(pg_type.oid, typtypmod) AS type_name
-        FROM pg_catalog.pg_type
-        JOIN pg_catalog.pg_namespace ON (pg_namespace.oid = typnamespace)
-        WHERE pg_type.oid = #{oid}
-      EOT
-      tuple = conn.query(type_query).first
-      tuple['type_name']
     end
   end
 end

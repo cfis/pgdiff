@@ -1,18 +1,45 @@
 module PgDiff
   class View
-    attr_reader :def, :name
+    attr_reader :schema, :name, :definition
 
-    def initialize(conn, sch, relname)
-      @name = "#{sch}.#{relname}"
-      view_qery = <<~EOT
-        SELECT pg_catalog.pg_get_viewdef('#{@name}'::regclass, true)
+    def self.from_database(connection, ignore_schemas)
+      query  = <<~EOT
+        SELECT n.nspname, c.oid, c.relname, c.relkind
+        FROM pg_catalog.pg_class c
+        LEFT JOIN pg_catalog.pg_user u ON u.usesysid = c.relowner
+        LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        WHERE c.relkind = 'v'
+          AND n.nspname NOT IN (#{ignore_schemas.join(', ')})
+        ORDER BY 1,2;
       EOT
-      tuple = conn.query(view_qery).first
-      @def = tuple['pg_get_viewdef']
+
+      connection.query(query).map do |hash|
+        oid = hash['oid']
+        schema = hash['nspname']
+        name = hash['relname']
+        view_query = <<~EOT
+          SELECT pg_catalog.pg_get_viewdef(#{oid}, true)
+        EOT
+        definition = connection.query(view_query).first['pg_get_viewdef']
+        View.new(schema, name, definition)
+      end
     end
 
-    def definition
-      "CREATE VIEW #{@name} AS #{@def}"
+    def initialize(schema, name, definition)
+      @schema = schema
+      @name = name
+      @definition = definition
+    end
+
+    def qualified_name
+      "#{self.schema}.#{self.name}"
+    end
+
+    def create_statement
+      <<~EOT
+        CREATE VIEW #{qualified_name} AS
+        #{definition}
+      EOT
     end
   end
 end
