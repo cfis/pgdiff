@@ -31,6 +31,11 @@ module PgDiff
       @definition = definition
     end
 
+    def eql?(other)
+      self.qualified_name == other.qualified_name &&
+        self.definition == other.definition
+    end
+
     def qualified_name
       "#{self.schema}.#{self.name}"
     end
@@ -40,6 +45,10 @@ module PgDiff
         CREATE VIEW #{qualified_name} AS
         #{definition}
       EOT
+    end
+
+    def drop_statement
+      "DROP VIEW #{qualified_name};"
     end
   end
 end

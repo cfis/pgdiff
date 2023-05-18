@@ -142,19 +142,12 @@ module PgDiff
     end
 
     def compare_views
-      @old_database.views.keys.each do |name|
-        add_script(:views_drop ,  "DROP VIEW #{name};") unless @new_database.views.has_key?(name)
+      @old_database.views.difference(@new_database.views).each do |view|
+        add_script(:views_drop, view.drop_statement)
       end
 
-      @new_database.views.each do |name, df|
-        add_script(:views_create , df.create_statement) unless @old_database.views.has_key?(name)
-        old_view = @old_database.views[name]
-        if old_view && df.definition != old_view.definition
-          add_script(:views_drop ,  "DROP VIEW #{name};")
-          add_script(:views_create ,  "-- [changed view] :")
-          add_script(:views_create ,  "-- #{old_view.definition.gsub(/\n/, ' ')}")
-          add_script(:views_create ,  df.definition)
-        end
+      @new_database.views.difference(@old_database.views).each do |view|
+        add_script(:views_create, view.create_statement)
       end
     end
 

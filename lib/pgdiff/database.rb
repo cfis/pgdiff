@@ -36,10 +36,7 @@ module PgDiff
     end
 
     def load_views(connection)
-      views = View.from_database(connection, @ignore_schemas)
-      views.each do |view|
-        @views[view.qualified_name] = view
-      end
+      @views = View.from_database(connection, @ignore_schemas)
     end
 
     def load_sequences(connection)
