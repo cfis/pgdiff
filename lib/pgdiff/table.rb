@@ -13,8 +13,8 @@ module PgDiff
         ORDER BY 1,2;
       EOT
 
-      connection.query(query).map do |tuple|
-        Table.new(connection, tuple['nspname'], tuple['relname'])
+      connection.query(query).map do |rename|
+        Table.new(connection, rename['nspname'], rename['relname'])
       end
     end
     
@@ -68,6 +68,10 @@ module PgDiff
       end
     end
 
+    def eql?(other)
+      self.qualified_name == other.qualified_name
+    end
+
     def qualified_name
       "#{self.schema}.#{self.name}"
     end
@@ -105,6 +109,14 @@ module PgDiff
         out << (c+";")
       end
       out.join("\n")
+    end
+
+    def create_statement
+      self.table_creation
+    end
+
+    def drop_statement
+      "DROP TABLE #{qualified_name} CASCADE;"
     end
   end
 end

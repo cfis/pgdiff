@@ -49,8 +49,8 @@ module PgDiff
       compare_rules
       compare_views
       compare_tables
+      #compare_table_constraints
       compare_functions
-      compare_table_constraints
     end
 
     def add_script(section, statement)
@@ -152,21 +152,26 @@ module PgDiff
     end
 
     def compare_tables
-      @old_database.tables.each do |name, table|
-        add_script(:tables_drop, "DROP TABLE #{name} CASCADE;") unless @new_database.tables.has_key?(name)
+      @old_database.tables.difference(@new_database.tables).each do |table|
+        add_script(:tables_drop, table.drop_statement)
       end
-      @to_compare = []
-      @new_database.tables.each do |name, table|
-        unless @old_database.tables.has_key?(name)
-          add_script(:tables_create ,  table.table_creation)
-          add_script(:indices_create ,  table.index_creation) unless table.indexes.empty?
-          @to_compare << name
-        else
-          diff_attributes(@old_database.tables[name], table)
-          diff_indexes(@old_database.tables[name], table)
-          @to_compare << name
-        end
+
+      @new_database.tables.difference(@old_database.tables).each do |table|
+        add_script(:tables_create, table.create_statement)
       end
+
+      # @to_compare = []
+      # @new_database.tables.each do |name, table|
+      #   unless @old_database.tables.has_key?(name)
+      #     add_script(:tables_create ,  table.create_statement)
+      #     add_script(:indices_create ,  table.index_creation) unless table.indexes.empty?
+      #     @to_compare << name
+      #   else
+      #     diff_attributes(@old_database.tables[name], table)
+      #     diff_indexes(@old_database.tables[name], table)
+      #     @to_compare << name
+      #   end
+      # end
     end
 
     def compare_table_constraints
