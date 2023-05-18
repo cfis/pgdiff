@@ -17,5 +17,17 @@ module PgDiff
     def initialize(name)
       @name = name
     end
+
+    def eql?(other)
+      self.name == other.name
+    end
+
+    def create_statement
+      "CREATE SCHEMA #{name};"
+    end
+
+    def drop_statement
+      "DROP SCHEMA #{name};"
+    end
   end
 end

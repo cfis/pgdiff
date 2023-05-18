@@ -60,11 +60,12 @@ module PgDiff
     end
 
     def compare_schemas
-      @old_database.schemas.keys.each do |name|
-        add_script(:schemas_drop ,  "DROP SCHEMA #{name};") unless @new_database.schemas.has_key?(name)
+      @old_database.schemas.difference(@new_database.schemas).each do |schema|
+        add_script(:schemas_drop ,  schema.drop_statement)
       end
-      @new_database.schemas.keys.each do |name|
-        add_script(:schemas_create ,  "CREATE SCHEMA #{name};") unless @old_database.schemas.has_key?(name)
+
+      @new_database.schemas.difference(@old_database.schemas).each do |schema|
+        add_script(:schemas_drop ,  schema.create_statement)
       end
     end
 

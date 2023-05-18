@@ -61,10 +61,7 @@ module PgDiff
     end
 
     def load_schemas(connection)
-      schemas = Schema.from_database(connection, @ignore_schemas)
-      schemas.each do |schema|
-        @schemas[schema.name] = schema
-      end
+      @schemas = Schema.from_database(connection, @ignore_schemas)
     end
 
     def load_functions(connection)
