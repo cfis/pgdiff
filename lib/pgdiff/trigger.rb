@@ -23,8 +23,16 @@ module PgDiff
       @definition = df + ";"
     end
 
-    def == (other)
+    def eql?(other)
       other.definition == definition
+    end
+
+    def create_statement
+      self.definition
+    end
+
+    def drop_statement
+      "DROP trigger #{trigger.name} ON #{trigger.table_name} CASCADE;"
     end
   end
 end

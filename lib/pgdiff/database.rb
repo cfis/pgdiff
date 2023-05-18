@@ -67,10 +67,7 @@ module PgDiff
     end
 
     def load_triggers(connection)
-      triggers = Trigger.from_database(connection, @ignore_schemas)
-      triggers.each do |trigger|
-        @triggers[trigger.name + "." + trigger.name] = trigger
-      end
+      @triggers = Trigger.from_database(connection, @ignore_schemas)
     end
   end
 end

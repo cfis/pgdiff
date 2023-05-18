@@ -132,19 +132,12 @@ module PgDiff
     end
 
     def compare_triggers
-      @old_database.triggers.each do |name, trigger|
-        add_script(:triggers_drop ,  "DROP trigger #{trigger.name} ON #{trigger.name} CASCADE;") unless @new_database.triggers.has_key?(name)
+      @old_database.triggers.difference(@new_database.triggers).each do |trigger|
+        add_script(:triggers_drop, trigger.drop_statement)
       end
 
-      @new_database.triggers.each do |name, trigger|
-        add_script(:triggers_create ,   trigger.definition) unless @old_database.triggers.has_key?(name)
-        old_trigger = @old_database.triggers[name]
-        if old_trigger && old_trigger != trigger
-          add_script(:triggers_drop ,  "DROP trigger #{trigger.name} ON #{trigger.name} CASCADE;")
-          add_script(:triggers_create ,  "-- [changed trigger] :")
-          add_script(:triggers_create ,  "-- OLD #{old_trigger.definition}")
-          add_script(:triggers_create ,   trigger.definition)
-        end
+      @new_database.triggers.difference(@old_database.triggers).each do |trigger|
+        add_script(:triggers_create, trigger.create_statement)
       end
     end
 
