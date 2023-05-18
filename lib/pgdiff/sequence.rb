@@ -23,12 +23,20 @@ module PgDiff
       @name = name
     end
 
+    def eql?(other)
+      self.qualified_name == other.qualified_name
+    end
+
     def qualified_name
       "#{self.schema}.#{self.name}"
     end
 
-    def definition
-      "CREATE SEQUENCE #{@name} ;"
+    def create_statement
+      "CREATE SEQUENCE #{qualified_name};"
+    end
+
+    def drop_statement
+      "DROP SEQUENCE #{@name} CASCADE;"
     end
   end
 end

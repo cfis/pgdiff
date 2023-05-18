@@ -96,11 +96,12 @@ module PgDiff
     end
 
     def compare_sequences
-      @old_database.sequences.keys.each do |name|
-        add_script(:sequences_drop ,  "DROP SEQUENCE #{name} CASCADE;") unless @new_database.sequences.has_key?(name)
+      @old_database.sequences.difference(@new_database.sequences).each do |sequence|
+        add_script(:schemas_drop, sequence.drop_statement)
       end
-      @new_database.sequences.keys.each do |name|
-        add_script(:sequences_create ,  "CREATE SEQUENCE #{name};") unless @old_database.sequences.has_key?(name)
+
+      @new_database.sequences.difference(@old_database.sequences).each do |sequence|
+        add_script(:schemas_drop, sequence.create_statement)
       end
     end
 

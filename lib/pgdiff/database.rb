@@ -43,10 +43,7 @@ module PgDiff
     end
 
     def load_sequences(connection)
-      sequences = Sequence.from_database(connection, @ignore_schemas)
-      sequences.each do |sequence|
-        @sequences[sequence.qualified_name] = sequence
-      end
+      @sequences = Sequence.from_database(connection, @ignore_schemas)
     end
 
     def load_domains(connection)
