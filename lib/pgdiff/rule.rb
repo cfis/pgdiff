@@ -12,7 +12,7 @@ module PgDiff
       EOT
 
       connection.exec(query).map do |record|
-        Rule.new(record['tab_name'], record['rule_name'], record['definition'])
+        new(record['tab_name'], record['rule_name'], record['definition'])
       end
     end
 
@@ -24,6 +24,10 @@ module PgDiff
 
     def eql?(other)
       self.definition == other.definition
+    end
+
+    def hash
+      self.definition.hash
     end
 
     def create_statement

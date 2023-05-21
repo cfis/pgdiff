@@ -25,19 +25,19 @@ module PgDiff
       EOT
 
       connection.exec(query).map do |record|
-        Function.new(record['namespace'], record['function_name'],
-                     arguments: record["function_arguments"],
-                     language: record['language_name'],
-                     source: record['source_code'],
-                     returns_set: record['returns_set'],
-                     return_type: record['return_type'],
-                     strict: record['proisstrict'] ? 'STRICT' : '',
-                     secdef: record['prosecdef'] ? 'SECURITY DEFINER' : '',
-                     volatile: case record['provolatile']
-                                 when 'i' then 'IMMUTABLE'
-                                 when 's' then 'STABLE'
-                                 else ''
-                                 end)
+        new(record['namespace'], record['function_name'],
+            arguments: record["function_arguments"],
+            language: record['language_name'],
+            source: record['source_code'],
+            returns_set: record['returns_set'],
+            return_type: record['return_type'],
+            strict: record['proisstrict'] ? 'STRICT' : '',
+            secdef: record['prosecdef'] ? 'SECURITY DEFINER' : '',
+            volatile: case record['provolatile']
+                        when 'i' then 'IMMUTABLE'
+                        when 's' then 'STABLE'
+                        else ''
+                      end)
       end
     end
 
@@ -56,13 +56,17 @@ module PgDiff
       @volatile = volatile
     end
 
+    def qualified_name
+      "#{self.schema}.#{self.name}"
+    end
+
     def eql?(other)
       self.signature == other.signature &&
         self.source == other.source
     end
 
-    def qualified_name
-      "#{self.schema}.#{self.name}"
+    def hash
+      self.qualified_name.hash
     end
 
     def signature

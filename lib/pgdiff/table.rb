@@ -14,7 +14,7 @@ module PgDiff
       EOT
 
       connection.query(query).map do |rename|
-        Table.new(connection, rename['nspname'], rename['relname'])
+        new(connection, rename['nspname'], rename['relname'])
       end
     end
     
@@ -68,12 +68,16 @@ module PgDiff
       end
     end
 
+    def qualified_name
+      "#{self.schema}.#{self.name}"
+    end
+
     def eql?(other)
       self.qualified_name == other.qualified_name
     end
 
-    def qualified_name
-      "#{self.schema}.#{self.name}"
+    def hash
+      self.qualified_name.hash
     end
 
     def has_attribute?(name)

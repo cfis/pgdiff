@@ -13,7 +13,7 @@ module PgDiff
       EOT
 
       connection.exec(query).map do |record|
-        Trigger.new(record['tgtable'], record['tgname'], record['tg_def'])
+        new(record['tgtable'], record['tgname'], record['tg_def'])
       end
     end
 
@@ -25,6 +25,10 @@ module PgDiff
 
     def eql?(other)
       other.definition == definition
+    end
+
+    def hash
+      self.qualified_name.hash
     end
 
     def create_statement

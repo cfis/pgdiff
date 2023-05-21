@@ -11,7 +11,7 @@ module PgDiff
       EOT
 
       connection.query(query).map do |record|
-        Extension.new(record['nspname'], record['extname'], record['extversion'])
+        new(record['nspname'], record['extname'], record['extversion'])
       end
     end
 
@@ -27,6 +27,10 @@ module PgDiff
 
     def eql?(other)
       self.qualified_name == other.qualified_name
+    end
+
+    def hash
+      self.qualified_name.hash
     end
 
     def create_statement

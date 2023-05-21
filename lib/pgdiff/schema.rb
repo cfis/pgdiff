@@ -10,7 +10,7 @@ module PgDiff
       EOT
 
       connection.query(query).map do |record|
-        Schema.new(record['nspname'])
+        new(record['nspname'])
       end
     end
 
@@ -20,6 +20,10 @@ module PgDiff
 
     def eql?(other)
       self.name == other.name
+    end
+
+    def hash
+      self.name.hash
     end
 
     def create_statement

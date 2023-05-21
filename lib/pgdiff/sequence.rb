@@ -14,7 +14,7 @@ module PgDiff
       EOT
 
       connection.query(query).map do |tuple|
-        Sequence.new(tuple['nspname'], tuple['relname'])
+        new(tuple['nspname'], tuple['relname'])
       end
     end
 
@@ -23,12 +23,16 @@ module PgDiff
       @name = name
     end
 
+    def qualified_name
+      "#{self.schema}.#{self.name}"
+    end
+
     def eql?(other)
       self.qualified_name == other.qualified_name
     end
 
-    def qualified_name
-      "#{self.schema}.#{self.name}"
+    def hash
+      self.qualified_name.hash
     end
 
     def create_statement

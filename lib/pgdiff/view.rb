@@ -21,7 +21,7 @@ module PgDiff
           SELECT pg_catalog.pg_get_viewdef(#{oid}, true)
         EOT
         definition = connection.query(view_query).first['pg_get_viewdef']
-        View.new(schema, name, definition)
+        new(schema, name, definition)
       end
     end
 
@@ -31,13 +31,17 @@ module PgDiff
       @definition = definition
     end
 
+    def qualified_name
+      "#{self.schema}.#{self.name}"
+    end
+
     def eql?(other)
       self.qualified_name == other.qualified_name &&
         self.definition == other.definition
     end
 
-    def qualified_name
-      "#{self.schema}.#{self.name}"
+    def hash
+      self.qualified_name.hash
     end
 
     def create_statement
