@@ -41,16 +41,16 @@ module PgDiff
     def run_compare
       @old_database = Database.new(@source_db, ignore_schemas: @ignore_schemas)
       @new_database = Database.new(@target_db, ignore_schemas: @ignore_schemas)
-      # compare_schemas
-      # compare_extensions
-      # compare_domains
+      compare_schemas
+      compare_extensions
+      compare_domains
       compare_sequences
-      # compare_triggers
-      # compare_rules
-      # compare_views
+      compare_triggers
+      compare_rules
+      compare_views
       compare_tables
       #compare_table_constraints
-      #      compare_functions
+      compare_functions
     end
 
     def add_script(section, statement)
@@ -152,14 +152,6 @@ module PgDiff
     end
 
     def compare_tables
-      table1 = @old_database.tables.first
-      table2 = @new_database.tables.first
-      a = @old_database.tables.difference(@new_database.tables)
-      b = @old_database.tables.intersection(@new_database.tables)
-      c = @old_database.tables.union(@new_database.tables)
-      d = @old_database.tables.eql?(@new_database.tables)
-      e = @old_database.tables == @new_database.tables
-
       @old_database.tables.difference(@new_database.tables).each do |table|
         add_script(:tables_drop, table.drop_statement)
       end

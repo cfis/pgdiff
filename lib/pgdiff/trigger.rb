@@ -24,11 +24,11 @@ module PgDiff
     end
 
     def eql?(other)
-      other.definition == definition
+      self.definition == other.definition
     end
 
     def hash
-      self.qualified_name.hash
+      self.definition.hash
     end
 
     def create_statement

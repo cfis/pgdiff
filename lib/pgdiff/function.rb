@@ -31,12 +31,12 @@ module PgDiff
             source: record['source_code'],
             returns_set: record['returns_set'],
             return_type: record['return_type'],
-            strict: record['proisstrict'] ? 'STRICT' : '',
-            secdef: record['prosecdef'] ? 'SECURITY DEFINER' : '',
+            strict: record['proisstrict'] ? 'STRICT' : nil,
+            secdef: record['prosecdef'] ? 'SECURITY DEFINER' : nil,
             volatile: case record['provolatile']
                         when 'i' then 'IMMUTABLE'
                         when 's' then 'STABLE'
-                        else ''
+                        else nil
                       end)
       end
     end
@@ -78,7 +78,7 @@ module PgDiff
         CREATE OR REPLACE FUNCTION #{qualified_name}(#{arguments})
         RETURNS #{@returns_set ? 'SETOF' : ''} #{@return_type} AS $$
         #{@source}
-        $$ LANGUAGE '#{@language}' #{@volatile} #{@strict} #{@secdef};
+        $$ LANGUAGE '#{@language}' #{[@volatile, @strict, @secdef].compact.join(" ")};
       EOT
     end
 
