@@ -2,6 +2,16 @@ module PgDiff
   class Function
     attr_reader :schema, :name, :arguments, :source
 
+    def self.compare(source, target, output)
+      source.difference(target).each do |function|
+        output << function.drop_statement << "\n"
+      end
+
+      target.difference(source).each do |function|
+        output << function.create_statement << "\n"
+      end
+    end
+
     def self.from_database(connection, ignore_schemas)
       query = <<~EOT
        SELECT nspname AS namespace,

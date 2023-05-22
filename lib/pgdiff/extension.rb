@@ -2,6 +2,30 @@ module PgDiff
   class Extension
     attr_reader :schema, :name, :version
 
+    def self.compare(source, target, output)
+      source.intersection(target).each do |old_extension|
+        new_extension = target.find do |an_extension|
+          old_extension.qualified_name == an_extension.qualified_name
+        end
+        if old_extension.version < new_extension.version
+          # Upgrade
+          output << new_extension.alter_statement << "\n"
+        elsif old_extension.version > new_extension.version
+          # Downgrade
+          output << old_extension.drop_statement << "\n"
+          output << new_extension.create_statement << "\n"
+        end
+      end
+
+      source.difference(target).each do |extension|
+        output << extension.drop_statement << "\n"
+      end
+
+      target.difference(source).each do |extension|
+        output << extension.create_statement << "\n"
+      end
+    end
+
     def self.from_database(connection, ignore_schemas)
       query = <<~EOT
         SELECT *

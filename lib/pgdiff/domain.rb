@@ -2,6 +2,16 @@ module PgDiff
   class Domain
     attr_reader :schema, :name, :definition
 
+    def self.compare(source, target, output)
+      source.difference(target).each do |domain|
+        output << domain.drop_statement << "\n"
+      end
+
+      target.difference(source).each do |domain|
+        output << domain.create_statement << "\n"
+      end
+    end
+
     def self.from_database(connection, ignore_schemas)
       query = <<~EOT
         SELECT n.nspname, t.typname,  pg_catalog.format_type(t.typbasetype, t.typtypmod) || ' ' ||

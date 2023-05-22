@@ -52,5 +52,5 @@ args = OptionParser.new do |parser|
 end.parse!
 
 diff = PgDiff::Diff.new(options.source, options.target, ignore_schemas: options.ignore_schemas)
-diff.run_compare
-puts diff.output
+output = diff.run_compare
+puts output.string

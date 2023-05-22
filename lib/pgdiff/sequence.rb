@@ -2,6 +2,16 @@ module PgDiff
   class Sequence
     attr_accessor :schema, :name
 
+    def self.compare(source, target, output)
+      source.difference(target).each do |sequence|
+        output << sequence.drop_statement << "\n"
+      end
+
+      target.difference(source).each do |sequence|
+        output << sequence.create_statement << "\n"
+      end
+    end
+
     def self.from_database(connection, ignore_schemas)
       query = <<~EOT
         SELECT n.nspname, c.relname, c.relkind

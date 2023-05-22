@@ -2,6 +2,16 @@ module PgDiff
   class View
     attr_reader :schema, :name, :definition
 
+    def self.compare(source, target, output)
+      source.difference(target).each do |view|
+        output << view.drop_statement << "\n"
+      end
+
+      target.difference(source).each do |view|
+        output << view.create_statement << "\n"
+      end
+    end
+
     def self.from_database(connection, ignore_schemas)
       query  = <<~EOT
         SELECT n.nspname, c.oid, c.relname, c.relkind

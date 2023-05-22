@@ -6,206 +6,28 @@ module PgDiff
       @source_db = PG::Connection.new(source_db_spec)
       @target_db = PG::Connection.new(target_db_spec)
       @ignore_schemas = ignore_schemas
-
-      @sections = [
-        :domains_drop,
-        :domains_create,
-        :schemas_drop,
-        :schemas_create,
-        :extensions_create,
-        :extensions_alter,
-        :extensions_drop,
-        :tables_drop,
-        :tables_change,
-        :tables_create,
-        :sequences_drop,
-        :sequences_create,
-        :views_drop,
-        :views_create,
-        :constraints_drop,
-        :constraints_change,
-        :constraints_create,
-        :indices_drop,
-        :indices_create,
-        :functions_drop,
-        :functions_create ,
-        :triggers_drop,
-        :triggers_create ,
-        :rules_drop,
-        :rules_create
-      ]
-      @script = {}
-      @sections.each {|s| @script[s] = []}
     end
 
     def run_compare
       @old_database = Database.new(@source_db, ignore_schemas: @ignore_schemas)
       @new_database = Database.new(@target_db, ignore_schemas: @ignore_schemas)
-      compare_schemas
-      compare_extensions
-      compare_domains
-      compare_sequences
-      compare_triggers
-      compare_rules
-      compare_views
-      compare_tables
-      #compare_table_constraints
-      compare_functions
+
+      output = StringIO.new
+      Schema.compare(@old_database.schemas, @new_database.schemas, output)
+      Extension.compare(@old_database.extensions, @new_database.extensions, output)
+      Domain.compare(@old_database.domains, @new_database.domains, output)
+      Sequence.compare(@old_database.sequences, @new_database.sequences, output)
+      Table.compare(@old_database.tables, @new_database.tables, output)
+      Trigger.compare(@old_database.triggers, @new_database.triggers, output)
+      View.compare(@old_database.views, @new_database.views, output)
+      Rule.compare(@old_database.rules, @new_database.rules, output)
+      Function.compare(@old_database.functions, @new_database.functions, output)
+
+      output
     end
 
     def add_script(section, statement)
       @script[section] << statement
-    end
-
-    def compare_schemas
-      @old_database.schemas.difference(@new_database.schemas).each do |schema|
-        add_script(:schemas_drop, schema.drop_statement)
-      end
-
-      @new_database.schemas.difference(@old_database.schemas).each do |schema|
-        add_script(:schemas_create, schema.create_statement)
-      end
-    end
-
-    def compare_extensions
-      @old_database.extensions.intersection(@new_database.extensions).each do |old_extension|
-        new_extension = @new_database.extensions.find do |an_extension|
-          old_extension.qualified_name == an_extension.qualified_name
-        end
-        if old_extension.version < new_extension.version
-          # Upgrade
-          add_script(:extensions_alter, new_extension.alter_statement)
-        elsif old_extension.version > new_extension.version
-          # Downgrade
-          add_script(:extensions_drop, old_extension.drop_statement)
-          add_script(:extensions_create, new_extension.create_statement)
-        end
-      end
-
-      @old_database.extensions.difference(@new_database.extensions).each do |extension|
-        add_script(:extensions_drop, extension.drop_statement)
-      end
-
-      @new_database.extensions.difference(@old_database.extensions).each do |extension|
-        add_script(:extensions_create, extension.create_statement)
-      end
-    end
-
-    def compare_domains
-      @old_database.domains.difference(@new_database.domains).each do |domain|
-        add_script(:domains_drop, domain.drop_statement)
-      end
-
-      @new_database.domains.difference(@old_database.domains).each do |domain|
-        add_script(:domains_create, domain.create_statement)
-      end
-    end
-
-    def compare_sequences
-      @old_database.sequences.difference(@new_database.sequences).each do |sequence|
-        add_script(:schemas_drop, sequence.drop_statement)
-      end
-
-      @new_database.sequences.difference(@old_database.sequences).each do |sequence|
-        add_script(:schemas_create, sequence.create_statement)
-      end
-    end
-
-    def compare_functions
-      @old_database.functions.difference(@new_database.functions).each do |function|
-        add_script(:functions_drop, function.drop_statement)
-      end
-
-      @new_database.functions.difference(@old_database.functions).each do |function|
-        add_script(:functions_create, function.create_statement)
-      end
-    end
-
-    def compare_rules
-      @old_database.rules.difference(@new_database.rules).each do |rule|
-        add_script(:rules_drop, rule.drop_statement)
-      end
-
-      @new_database.rules.difference(@old_database.rules).each do |rule|
-        add_script(:rules_create, rule.create_statement)
-      end
-    end
-
-    def compare_triggers
-      @old_database.triggers.difference(@new_database.triggers).each do |trigger|
-        add_script(:triggers_drop, trigger.drop_statement)
-      end
-
-      @new_database.triggers.difference(@old_database.triggers).each do |trigger|
-        add_script(:triggers_create, trigger.create_statement)
-      end
-    end
-
-    def compare_views
-      @old_database.views.difference(@new_database.views).each do |view|
-        add_script(:views_drop, view.drop_statement)
-      end
-
-      @new_database.views.difference(@old_database.views).each do |view|
-        add_script(:views_create, view.create_statement)
-      end
-    end
-
-    def compare_tables
-      @old_database.tables.difference(@new_database.tables).each do |table|
-        add_script(:tables_drop, table.drop_statement)
-      end
-
-      @new_database.tables.difference(@old_database.tables).each do |table|
-        add_script(:tables_create, table.create_statement)
-      end
-
-      # @to_compare = []
-      # @new_database.tables.each do |name, table|
-      #   unless @old_database.tables.has_key?(name)
-      #     add_script(:tables_create ,  table.create_statement)
-      #     add_script(:indices_create ,  table.index_creation) unless table.indexes.empty?
-      #     @to_compare << name
-      #   else
-      #     diff_attributes(@old_database.tables[name], table)
-      #     diff_indexes(@old_database.tables[name], table)
-      #     @to_compare << name
-      #   end
-      # end
-    end
-
-    def compare_table_constraints
-      @c_check = []
-      @c_primary = []
-      @c_unique = []
-      @c_foreign = []
-      @to_compare.each do |name|
-        if @old_database.tables[name]
-          diff_constraints(@old_database.tables[name], @new_database.tables[name])
-        else
-          @new_database.tables[name].constraints.each do |cname, cdef|
-            add_cnstr(name,  cname, cdef)
-          end
-        end
-      end
-      @script[:constraints_create] += @c_check
-      @script[:constraints_create] += @c_primary
-      @script[:constraints_create] += @c_unique
-      @script[:constraints_create] += @c_foreign
-    end
-
-    def output
-      out = StringIO.new
-      @sections.each do |sect|
-        unless @script[sect].empty?
-           out << "-- **** #{sect.to_s.upcase} ****" << "\n"
-           @script[sect].each do |script|
-             out << script << "\n"
-           end
-           out << "\n"
-        end
-      end
-      out.string
     end
 
     def diff_attributes(old_table, new_table)

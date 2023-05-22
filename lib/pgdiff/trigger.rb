@@ -2,6 +2,16 @@ module PgDiff
   class Trigger
     attr_reader :name, :name, :definition
 
+    def self.compare(source, target, output)
+      source.difference(target).each do |trigger|
+        output << trigger.drop_statement << "\n"
+      end
+
+      target.difference(source).each do |trigger|
+        output << trigger.create_statement << "\n"
+      end
+    end
+
     def self.from_database(connection, ignore_schemas)
       query =  <<~EOT
         SELECT nspname || '.' || relname as tgtable, tgname, pg_get_triggerdef(pg_trigger.oid) as tg_def

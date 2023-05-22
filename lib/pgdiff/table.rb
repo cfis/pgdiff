@@ -2,6 +2,51 @@ module PgDiff
   class Table
     attr_accessor :schema, :name, :attributes, :constraints, :indexes
 
+    def self.compare(source, target, output)
+      source.difference(target).each do |table|
+        output << table.drop_statement << "\n"
+      end
+
+      target.difference(source).each do |table|
+        output << table.create_statement << "\n"
+      end
+
+      # @to_compare = []
+      # @new_database.tables.each do |name, table|
+      #   unless @old_database.tables.has_key?(name)
+      #     add_script(:tables_create ,  table.create_statement)
+      #     add_script(:indices_create ,  table.index_creation) unless table.indexes.empty?
+      #     @to_compare << name
+      #   else
+      #     diff_attributes(@old_database.tables[name], table)
+      #     diff_indexes(@old_database.tables[name], table)
+      #     @to_compare << name
+      #   end
+      # end
+    end
+
+    def compare_table_constraints
+      @c_check = []
+      @c_primary = []
+      @c_unique = []
+      @c_foreign = []
+      @to_compare.each do |name|
+        if @old_database.tables[name]
+          diff_constraints(@old_database.tables[name], @new_database.tables[name])
+        else
+          @new_database.tables[name].constraints.each do |cname, cdef|
+            add_cnstr(name,  cname, cdef)
+          end
+        end
+      end
+      @script[:constraints_create] += @c_check
+      @script[:constraints_create] += @c_primary
+      @script[:constraints_create] += @c_unique
+      @script[:constraints_create] += @c_foreign
+    end
+
+
+
     def self.from_database(connection, ignore_schemas)
       query = <<~EOT
         SELECT n.nspname, c.relname, c.relkind
