@@ -17,8 +17,9 @@ module PgDiff
         ORDER BY 1, 2
       EOT
 
-      connection.query(query).map do |record|
-        new(record['nspname'], record['typname'], record['def'])
+      connection.query(query).reduce(Set.new) do |set, record|
+        set << new(record['nspname'], record['typname'], record['def'])
+        set
       end
     end
 

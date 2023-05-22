@@ -9,8 +9,9 @@ module PgDiff
         WHERE nspname NOT IN (#{ignore_schemas.join(', ')})
       EOT
 
-      connection.query(query).map do |record|
-        new(record['nspname'])
+      connection.query(query).reduce(Set.new) do |set, record|
+        set << new(record['nspname'])
+        set
       end
     end
 

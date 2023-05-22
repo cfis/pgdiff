@@ -12,8 +12,9 @@ module PgDiff
           AND nspname NOT IN (#{ignore_schemas.join(', ')})
       EOT
 
-      connection.exec(query).map do |record|
-        new(record['tgtable'], record['tgname'], record['tg_def'])
+      connection.query(query).reduce(Set.new) do |set, record|
+        set << new(record['tgtable'], record['tgname'], record['tg_def'])
+        set
       end
     end
 

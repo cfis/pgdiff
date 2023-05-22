@@ -13,7 +13,7 @@ module PgDiff
         ORDER BY 1,2;
       EOT
 
-      connection.query(query).map do |record|
+      connection.query(query).reduce(Set.new) do |set, record|
         oid = record['oid']
         schema = record['nspname']
         name = record['relname']
@@ -21,7 +21,8 @@ module PgDiff
           SELECT pg_catalog.pg_get_viewdef(#{oid}, true)
         EOT
         definition = connection.query(view_query).first['pg_get_viewdef']
-        new(schema, name, definition)
+        set << new(schema, name, definition)
+        set
       end
     end
 

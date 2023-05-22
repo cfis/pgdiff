@@ -11,8 +11,9 @@ module PgDiff
         WHERE schemaname NOT IN (#{ignore_schemas.join(', ')})
       EOT
 
-      connection.exec(query).map do |record|
-        new(record['tab_name'], record['rule_name'], record['definition'])
+      connection.query(query).reduce(Set.new) do |set, record|
+        set << new(record['tab_name'], record['rule_name'], record['definition'])
+        set
       end
     end
 

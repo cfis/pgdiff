@@ -13,8 +13,9 @@ module PgDiff
         ORDER BY 1,2;
       EOT
 
-      connection.query(query).map do |rename|
-        new(connection, rename['nspname'], rename['relname'])
+      connection.query(query).reduce(Set.new) do |set, record|
+        set << new(connection, record['nspname'], record['relname'])
+        set
       end
     end
     
