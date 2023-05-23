@@ -3,6 +3,7 @@ module PgDiff
     attr_accessor :schema, :name, :attributes, :constraints, :indexes
 
     def self.compare(source, target, output)
+      # --- Tables ----
       source.difference(target).each do |table|
         output << table.drop_statement << "\n"
       end
@@ -10,6 +11,9 @@ module PgDiff
       target.difference(source).each do |table|
         output << table.create_statement << "\n"
       end
+
+      # --- Indexes ----
+
 
       # @to_compare = []
       # @new_database.tables.each do |name, table|
@@ -45,16 +49,14 @@ module PgDiff
       @script[:constraints_create] += @c_foreign
     end
 
-
-
-    def self.from_database(connection, ignore_schemas)
+    def self.from_database(connection, ignore_schemas = [])
       query = <<~EOT
         SELECT n.nspname, c.relname, c.relkind
         FROM pg_catalog.pg_class c
         LEFT JOIN pg_catalog.pg_user u ON u.usesysid = c.relowner
         LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
         WHERE c.relkind = 'r'
-          AND n.nspname NOT IN (#{ignore_schemas.join(', ')})
+          #{ignore_schemas.empty? ? "" : "AND n.nspname NOT IN (#{ignore_schemas.join(', ')})"}
         ORDER BY 1,2;
       EOT
 
@@ -69,49 +71,38 @@ module PgDiff
       @name = table_name
       @attributes = {}
       @constraints = {}
-      @indexes = {}
+      @indexes = Index.from_database(connection, self)
       @atlist = []
 
-      att_query = <<~EOT
-        select attname, format_type(atttypid, atttypmod) as a_type, attnotnull,  pg_get_expr(adbin, attrelid) as a_default
-        from pg_attribute left join pg_attrdef  on (adrelid = attrelid and adnum = attnum)
-        where attrelid = '#{schema}.#{table_name}'::regclass and not attisdropped and attnum > 0
-        order by attnum
-      EOT
-
-      connection.query(att_query).each do |tuple|
-        attname = tuple['attname']
-        typedef = tuple['a_type']
-        notnull = tuple['attnotnull']
-        default = tuple['a_default']
-        @attributes[attname] = Attribute.new(attname, typedef, notnull, default)
-        @atlist << attname
-      end
-
-      ind_query = <<~EOT
-        select indexrelid::regclass as indname, pg_get_indexdef(indexrelid) as def
-        from pg_index where indrelid = '#{schema}.#{table_name}'::regclass and not indisprimary
-      EOT
-
-      connection.query(ind_query).each do |tuple|
-        name = tuple['indname']
-        value = tuple['def']
-        @indexes[name] = value
-      end
-
-      cons_query = <<~EOT
-        select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid = '#{schema}.#{table_name}'::regclass
-      EOT
-
-      connection.query(cons_query).each do |tuple|
-        name = tuple['conname']
-        value = tuple['pg_get_constraintdef']
-        @constraints[name] = value
-      end
-
-      @constraints.keys.each do |cname|
-        @indexes.delete("#{schema}.#{cname}") if has_index?(cname)
-      end
+      # att_query = <<~EOT
+      #   select attname, format_type(atttypid, atttypmod) as a_type, attnotnull,  pg_get_expr(adbin, attrelid) as a_default
+      #   from pg_attribute left join pg_attrdef  on (adrelid = attrelid and adnum = attnum)
+      #   where attrelid = '#{schema}.#{table_name}'::regclass and not attisdropped and attnum > 0
+      #   order by attnum
+      # EOT
+      #
+      # connection.query(att_query).each do |tuple|
+      #   attname = tuple['attname']
+      #   typedef = tuple['a_type']
+      #   notnull = tuple['attnotnull']
+      #   default = tuple['a_default']
+      #   @attributes[attname] = Attribute.new(attname, typedef, notnull, default)
+      #   @atlist << attname
+      # end
+      #
+      # cons_query = <<~EOT
+      #   select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid = '#{schema}.#{table_name}'::regclass
+      # EOT
+      #
+      # connection.query(cons_query).each do |tuple|
+      #   name = tuple['conname']
+      #   value = tuple['pg_get_constraintdef']
+      #   @constraints[name] = value
+      # end
+      #
+      # @constraints.keys.each do |cname|
+      #   @indexes.delete("#{schema}.#{cname}") if has_index?(cname)
+      # end
     end
 
     def qualified_name

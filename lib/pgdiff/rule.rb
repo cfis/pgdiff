@@ -12,7 +12,7 @@ module PgDiff
       end
     end
     
-    def self.from_database(connection, ignore_schemas)
+    def self.from_database(connection, ignore_schemas = [])
       query = <<~EOT
         SELECT  schemaname || '.' ||  tablename || '.' || rulename AS rule_name,
                 schemaname || '.' ||  tablename AS tab_name,

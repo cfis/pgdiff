@@ -12,7 +12,7 @@ module PgDiff
       end
     end
 
-    def self.from_database(connection, ignore_schemas)
+    def self.from_database(connection, ignore_schemas = [])
       query = <<~EOT
        SELECT nspname AS namespace,
               proname AS function_name,

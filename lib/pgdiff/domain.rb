@@ -12,7 +12,7 @@ module PgDiff
       end
     end
 
-    def self.from_database(connection, ignore_schemas)
+    def self.from_database(connection, ignore_schemas = [])
       query = <<~EOT
         SELECT n.nspname, t.typname,  pg_catalog.format_type(t.typbasetype, t.typtypmod) || ' ' ||
            CASE WHEN t.typnotnull AND t.typdefault IS NOT NULL THEN 'not null default '|| t.typdefault
@@ -23,7 +23,7 @@ module PgDiff
         FROM pg_catalog.pg_type t
            LEFT JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
         WHERE t.typtype = 'd'
-          AND n.nspname NOT IN (#{ignore_schemas.join(', ')})
+          #{ignore_schemas.empty? ? "" : "AND n.nspname NOT IN (#{ignore_schemas.join(', ')})"}
         ORDER BY 1, 2
       EOT
 

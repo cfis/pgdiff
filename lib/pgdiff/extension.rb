@@ -26,7 +26,7 @@ module PgDiff
       end
     end
 
-    def self.from_database(connection, ignore_schemas)
+    def self.from_database(connection, ignore_schemas = [])
       query = <<~EOT
         SELECT *
         FROM pg_catalog.pg_extension

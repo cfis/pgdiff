@@ -12,14 +12,14 @@ module PgDiff
       end
     end
 
-    def self.from_database(connection, ignore_schemas)
+    def self.from_database(connection, ignore_schemas = [])
       query  = <<~EOT
         SELECT n.nspname, c.oid, c.relname, c.relkind
         FROM pg_catalog.pg_class c
         LEFT JOIN pg_catalog.pg_user u ON u.usesysid = c.relowner
         LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
         WHERE c.relkind = 'v'
-          AND n.nspname NOT IN (#{ignore_schemas.join(', ')})
+          #{ignore_schemas.empty? ? "" : "AND n.nspname NOT IN (#{ignore_schemas.join(', ')})"}
         ORDER BY 1,2;
       EOT
 
