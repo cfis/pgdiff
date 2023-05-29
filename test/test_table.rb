@@ -63,6 +63,7 @@ class TestTable < TestCase
         PRIMARY KEY (id)
       );
 
+      /* Table public.shared_table_constraints has changed constraints */
       ALTER TABLE public.shared_table_constraints ADD CONSTRAINT shared_table_constraints_pkey
       PRIMARY KEY (id);
     EOS

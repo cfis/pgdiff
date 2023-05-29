@@ -1,15 +1,22 @@
+require 'diff/lcs'
+require 'diff/lcs/hunk'
+
 module PgDiff
   class Attributes
     include Enumerable
 
-    def self.compare(source, target, output)
-      source.difference(target).each do |domain|
-        output << domain.drop_statement << "\n"
-      end
+    def self.compare(sources, targets, output)
+      source_definitions = sources.definitions
+      target_definitions = targets.definitions
+      diffs = ::Diff::LCS.diff(source_definitions, target_definitions)
 
-      target.difference(source).each do |domain|
-        output << domain.create_statement << "\n"
+      file_length_difference = 0
+      diffs.each do |piece|
+        hunk = ::Diff::LCS::Hunk.new(source_definitions, target_definitions, piece, 0, file_length_difference)
+        file_length_difference = hunk.file_length_difference
+        output << hunk.diff(:unified).gsub(/^/, '   ') << "\n"
       end
+      output << "*/" << "\n"
     end
 
     def self.from_database(connection, table)

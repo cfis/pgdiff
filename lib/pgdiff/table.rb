@@ -1,6 +1,3 @@
-require 'diff/lcs'
-require 'diff/lcs/hunk'
-
 module PgDiff
   class Table
     attr_accessor :oid, :schema, :name, :attributes, :constraints, :indexes
@@ -45,25 +42,15 @@ module PgDiff
 
       changes.each do |source, target|
         if !source.attributes.eql?(target.attributes)
-          source_definitions = source.attributes.definitions
-          target_definitions = target.attributes.definitions
           output << "/* Table " << source.qualified_name << " has changed attributes" << "\n"
-          diffs = ::Diff::LCS.diff(source_definitions, target_definitions)
-
-          file_length_difference = 0
-          diffs.each do |piece|
-            hunk = ::Diff::LCS::Hunk.new(source_definitions, target_definitions, piece, 0, file_length_difference)
-            file_length_difference = hunk.file_length_difference
-            output << hunk.diff(:unified).gsub(/^/, '   ') << "\n"
-          end
-          output << "*/" << "\n"
+          Attributes.compare(source.attributes, target.attributes, output)
           output << source.drop_statement << "\n"
           output << target.create_statement << "\n"
           output << "\n"
         else
+          output << "/* Table " << source.qualified_name << " has changed constraints */" << "\n"
           Constraints.compare(source.constraints, target.constraints, output)
         end
-
       end
 
       # --- Indexes ----

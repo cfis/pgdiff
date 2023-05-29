@@ -33,7 +33,6 @@ module PgDiff
       end
 
       changes.each do |source, target|
-        output << "-- Constraint Changed: #{self.table.qualified_name}.#{source.name}" << "\n"
         output << source.drop_statement << "\n"
         output << target.create_statement << "\n"
       end
