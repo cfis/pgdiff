@@ -13,3 +13,6 @@ Gem::PackageTask.new(spec) do |pkg|
   pkg.package_dir = 'pkg'
   pkg.need_tar    = false
 end
+
+# Add task to create test database
+load 'test/fixtures/database.rake'

@@ -16,6 +16,21 @@ class TestSequence < TestCase
     assert_equal("source_sequence", sequence.name)
   end
 
+  def test_load_all
+    sequences = PgDiff::Sequence.from_database(self.source_connection, [])
+    assert_equal(2, sequences.length)
+
+    sequences = sequences.to_a
+
+    sequence = sequences[0]
+    assert_equal("public", sequence.schema)
+    assert_equal("shared_sequence", sequence.name)
+
+    sequence = sequences[1]
+    assert_equal("public", sequence.schema)
+    assert_equal("source_sequence", sequence.name)
+  end
+
   def test_compare
     source = PgDiff::Sequence.from_database(self.source_connection)
     target = PgDiff::Sequence.from_database(self.target_connection)

@@ -12,11 +12,17 @@ module PgDiff
       end
     end
 
-    def self.from_database(connection, ignore_schemas = [])
+    def self.from_database(connection, ignore_schemas = Database::SYSTEM_SCHEMAS)
+      where_clause = if ignore_schemas.empty?
+                       ""
+                     else
+                       "WHERE nspname NOT IN (#{ignore_schemas.join(', ')})"
+                     end
+
       query = <<~EOT
         SELECT nspname
         FROM pg_namespace
-        WHERE nspname NOT IN (#{ignore_schemas.join(', ')})
+        #{where_clause}
       EOT
 
       connection.query(query).reduce(Set.new) do |set, record|

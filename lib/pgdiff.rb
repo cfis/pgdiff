@@ -1,5 +1,6 @@
 require 'pg'
 require 'pgdiff/attribute'
+require 'pgdiff/attributes'
 require 'pgdiff/database'
 require 'pgdiff/diff'
 require 'pgdiff/domain'

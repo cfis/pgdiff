@@ -12,7 +12,7 @@ module PgDiff
       end
     end
 
-    def self.from_database(connection, ignore_schemas = [])
+    def self.from_database(connection, ignore_schemas = Database::SYSTEM_SCHEMAS)
       query =  <<~EOT
         SELECT nspname || '.' || relname as tgtable, tgname, pg_get_triggerdef(pg_trigger.oid) as tg_def
         FROM pg_trigger

@@ -30,4 +30,8 @@ EOS
   spec.license = 'MIT'
   spec.date = Time.now
   spec.add_runtime_dependency('pg', ['>= 0.17.0'])
+  spec.add_runtime_dependency('diff-lcs')
+  spec.add_development_dependency('minitest')
+  spec.add_development_dependency('rake')
+  spec.add_development_dependency('yaml')
 end

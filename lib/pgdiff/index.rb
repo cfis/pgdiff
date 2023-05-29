@@ -22,7 +22,7 @@ module PgDiff
       EOT
 
       connection.query(query).reduce(Set.new) do |set, record|
-        new(table.schema, record['indname'], record['def'])
+        set << new(table.schema, record['indname'], record['def'])
         set
       end
     end

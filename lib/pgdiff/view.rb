@@ -12,7 +12,7 @@ module PgDiff
       end
     end
 
-    def self.from_database(connection, ignore_schemas = [])
+    def self.from_database(connection, ignore_schemas = Database::SYSTEM_SCHEMAS)
       query  = <<~EOT
         SELECT n.nspname, c.oid, c.relname, c.relkind
         FROM pg_catalog.pg_class c

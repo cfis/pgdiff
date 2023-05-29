@@ -1,10 +1,12 @@
 module PgDiff
   class Database
+    SYSTEM_SCHEMAS = %w['pg_catalog' 'pg_toast' 'information_schema']
+
     attr_accessor :extensions, :tables, :views, :sequences, :schemas, :domains, :rules, :functions, :triggers
 
     def initialize(connection, ignore_schemas: [])
       # Combine ignore schemas and single quote them
-      ignore_schemas += ['pg_catalog', 'pg_toast', 'information_schema']
+      ignore_schemas += SYSTEM_SCHEMAS
       @ignore_schemas = ignore_schemas.map {|schema_name| "'#{schema_name}'"}
 
       load_schemas(connection)

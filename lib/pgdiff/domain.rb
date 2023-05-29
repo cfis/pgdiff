@@ -12,7 +12,7 @@ module PgDiff
       end
     end
 
-    def self.from_database(connection, ignore_schemas = [])
+    def self.from_database(connection, ignore_schemas = Database::SYSTEM_SCHEMAS)
       query = <<~EOT
         SELECT n.nspname, t.typname,  pg_catalog.format_type(t.typbasetype, t.typtypmod) || ' ' ||
            CASE WHEN t.typnotnull AND t.typdefault IS NOT NULL THEN 'not null default '|| t.typdefault

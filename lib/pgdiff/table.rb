@@ -1,15 +1,62 @@
+require 'diff/lcs'
+require 'diff/lcs/hunk'
+
 module PgDiff
   class Table
-    attr_accessor :schema, :name, :attributes, :constraints, :indexes
+    attr_accessor :oid, :schema, :name, :attributes, :constraints, :indexes
 
-    def self.compare(source, target, output)
-      # --- Tables ----
-      source.difference(target).each do |table|
+    def self.compare(sources, targets, output)
+      drops = []
+      creates = []
+      updates = []
+
+      source_hash = sources.each_with_object(Hash.new) do |table, hash|
+        hash[table.qualified_name] = table
+      end
+
+      target_hash = targets.each_with_object(Hash.new) do |table, hash|
+        hash[table.qualified_name] = table
+      end
+
+      source_hash.each do |key, source|
+        target = target_hash[key]
+        case
+          when target.nil?
+            drops << source
+          when !source.eql?(target)
+            updates << [source, target]
+        end
+      end
+
+      target_hash.each do |key, target|
+        source = source_hash[key]
+        if source.nil?
+          creates << target
+        end
+      end
+
+      drops.each do |table|
         output << table.drop_statement << "\n"
       end
 
-      target.difference(source).each do |table|
+      creates.each do |table|
         output << table.create_statement << "\n"
+      end
+
+      updates.each do |source, target|
+        output << "/* Table " << source.qualified_name << " has changed attributes" << "\n"
+        diffs = ::Diff::LCS.diff(source.attributes.definitions, target.attributes.definitions)
+
+        file_length_difference = 0
+        diffs.each do |piece|
+          hunk = ::Diff::LCS::Hunk.new(source.attributes.definitions, target.attributes.definitions, piece, 0, file_length_difference)
+          file_length_difference = hunk.file_length_difference
+          output << hunk.diff(:unified).gsub(/^/, '   ') << "\n"
+        end
+        output << "*/" << "\n"
+        output << source.drop_statement << "\n"
+        output << target.create_statement << "\n"
+        output << "\n"
       end
 
       # --- Indexes ----
@@ -49,47 +96,32 @@ module PgDiff
       @script[:constraints_create] += @c_foreign
     end
 
-    def self.from_database(connection, ignore_schemas = [])
+    def self.from_database(connection, ignore_schemas = Database::SYSTEM_SCHEMAS)
       query = <<~EOT
-        SELECT n.nspname, c.relname, c.relkind
-        FROM pg_catalog.pg_class c
-        LEFT JOIN pg_catalog.pg_user u ON u.usesysid = c.relowner
-        LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-        WHERE c.relkind = 'r'
-          #{ignore_schemas.empty? ? "" : "AND n.nspname NOT IN (#{ignore_schemas.join(', ')})"}
+        SELECT pg_class.oid, pg_namespace.nspname, pg_class.relname, pg_class.relkind
+        FROM pg_catalog.pg_class
+        LEFT JOIN pg_catalog.pg_user ON pg_class.relowner = pg_user.usesysid 
+        LEFT JOIN pg_catalog.pg_namespace ON pg_class.relnamespace = pg_namespace.oid 
+        WHERE pg_class.relkind = 'r'
+          #{ignore_schemas.empty? ? "" : "AND pg_namespace.nspname NOT IN (#{ignore_schemas.join(', ')})"}
         ORDER BY 1,2;
       EOT
 
       connection.query(query).reduce(Set.new) do |set, record|
-        set << new(connection, record['nspname'], record['relname'])
+        set << new(connection, record['oid'], record['nspname'], record['relname'])
         set
       end
     end
     
-    def initialize(connection, schema, table_name)
+    def initialize(connection, oid, schema, table_name)
+      @oid = oid
       @schema = schema
       @name = table_name
       @attributes = {}
       @constraints = {}
       @indexes = Index.from_database(connection, self)
-      @atlist = []
+      @attributes = Attributes.from_database(connection, self)
 
-      # att_query = <<~EOT
-      #   select attname, format_type(atttypid, atttypmod) as a_type, attnotnull,  pg_get_expr(adbin, attrelid) as a_default
-      #   from pg_attribute left join pg_attrdef  on (adrelid = attrelid and adnum = attnum)
-      #   where attrelid = '#{schema}.#{table_name}'::regclass and not attisdropped and attnum > 0
-      #   order by attnum
-      # EOT
-      #
-      # connection.query(att_query).each do |tuple|
-      #   attname = tuple['attname']
-      #   typedef = tuple['a_type']
-      #   notnull = tuple['attnotnull']
-      #   default = tuple['a_default']
-      #   @attributes[attname] = Attribute.new(attname, typedef, notnull, default)
-      #   @atlist << attname
-      # end
-      #
       # cons_query = <<~EOT
       #   select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid = '#{schema}.#{table_name}'::regclass
       # EOT
@@ -110,19 +142,12 @@ module PgDiff
     end
 
     def eql?(other)
-      self.qualified_name == other.qualified_name
+      self.qualified_name == other.qualified_name &&
+        self.attributes == other.attributes
     end
 
     def hash
       self.qualified_name.hash
-    end
-
-    def has_attribute?(name)
-      @attributes.has_key?(name)
-    end
-
-    def attribute_index(name)
-      @atlist.index(name)
     end
 
     def has_index?(name)
@@ -131,17 +156,6 @@ module PgDiff
 
     def has_constraint?(name)
       @constraints.has_key?(name)
-    end
-
-    def table_creation
-      out = ["CREATE TABLE #{qualified_name} ("]
-      stmt = []
-      @atlist.each do |attname|
-        stmt << @attributes[attname].definition
-      end
-      out << stmt.join(",\n")
-      out << ");"
-      out.join("\n")
     end
 
     def index_creation
@@ -153,11 +167,27 @@ module PgDiff
     end
 
     def create_statement
-      self.table_creation
+      attribute_definitions = @attributes.map do |attribute|
+        attribute.definition
+      end
+
+      statement = <<~EOT
+        CREATE TABLE #{qualified_name}
+        (
+          #{attribute_definitions.join(",\n  ")}
+        );
+      EOT
+      statement.strip
     end
 
     def drop_statement
       "DROP TABLE #{qualified_name} CASCADE;"
     end
+
+    def to_s
+      self.qualified_name
+    end
+    alias :inspect :to_s
+
   end
 end
