@@ -8,7 +8,7 @@ module PgDiff
     def self.compare(sources, targets, output)
       drops = []
       creates = []
-      updates = []
+      changes = []
 
       source_hash = sources.each_with_object(Hash.new) do |table, hash|
         hash[table.qualified_name] = table
@@ -24,7 +24,7 @@ module PgDiff
           when target.nil?
             drops << source
           when !source.eql?(target)
-            updates << [source, target]
+            changes << [source, target]
         end
       end
 
@@ -43,20 +43,27 @@ module PgDiff
         output << table.create_statement << "\n"
       end
 
-      updates.each do |source, target|
-        output << "/* Table " << source.qualified_name << " has changed attributes" << "\n"
-        diffs = ::Diff::LCS.diff(source.attributes.definitions, target.attributes.definitions)
+      changes.each do |source, target|
+        if !source.attributes.eql?(target.attributes)
+          source_definitions = source.attributes.definitions
+          target_definitions = target.attributes.definitions
+          output << "/* Table " << source.qualified_name << " has changed attributes" << "\n"
+          diffs = ::Diff::LCS.diff(source_definitions, target_definitions)
 
-        file_length_difference = 0
-        diffs.each do |piece|
-          hunk = ::Diff::LCS::Hunk.new(source.attributes.definitions, target.attributes.definitions, piece, 0, file_length_difference)
-          file_length_difference = hunk.file_length_difference
-          output << hunk.diff(:unified).gsub(/^/, '   ') << "\n"
+          file_length_difference = 0
+          diffs.each do |piece|
+            hunk = ::Diff::LCS::Hunk.new(source_definitions, target_definitions, piece, 0, file_length_difference)
+            file_length_difference = hunk.file_length_difference
+            output << hunk.diff(:unified).gsub(/^/, '   ') << "\n"
+          end
+          output << "*/" << "\n"
+          output << source.drop_statement << "\n"
+          output << target.create_statement << "\n"
+          output << "\n"
+        else
+          Constraints.compare(source.constraints, target.constraints, output)
         end
-        output << "*/" << "\n"
-        output << source.drop_statement << "\n"
-        output << target.create_statement << "\n"
-        output << "\n"
+
       end
 
       # --- Indexes ----
@@ -74,26 +81,6 @@ module PgDiff
       #     @to_compare << name
       #   end
       # end
-    end
-
-    def compare_table_constraints
-      @c_check = []
-      @c_primary = []
-      @c_unique = []
-      @c_foreign = []
-      @to_compare.each do |name|
-        if @old_database.tables[name]
-          diff_constraints(@old_database.tables[name], @new_database.tables[name])
-        else
-          @new_database.tables[name].constraints.each do |cname, cdef|
-            add_cnstr(name,  cname, cdef)
-          end
-        end
-      end
-      @script[:constraints_create] += @c_check
-      @script[:constraints_create] += @c_primary
-      @script[:constraints_create] += @c_unique
-      @script[:constraints_create] += @c_foreign
     end
 
     def self.from_database(connection, ignore_schemas = Database::SYSTEM_SCHEMAS)
@@ -121,20 +108,7 @@ module PgDiff
       @constraints = {}
       @indexes = Index.from_database(connection, self)
       @attributes = Attributes.from_database(connection, self)
-
-      # cons_query = <<~EOT
-      #   select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid = '#{schema}.#{table_name}'::regclass
-      # EOT
-      #
-      # connection.query(cons_query).each do |tuple|
-      #   name = tuple['conname']
-      #   value = tuple['pg_get_constraintdef']
-      #   @constraints[name] = value
-      # end
-      #
-      # @constraints.keys.each do |cname|
-      #   @indexes.delete("#{schema}.#{cname}") if has_index?(cname)
-      # end
+      @constraints = Constraints.from_database(connection, self)
     end
 
     def qualified_name
@@ -143,7 +117,8 @@ module PgDiff
 
     def eql?(other)
       self.qualified_name == other.qualified_name &&
-        self.attributes == other.attributes
+        self.attributes == other.attributes &&
+        self.constraints == other.constraints
     end
 
     def hash
@@ -152,10 +127,6 @@ module PgDiff
 
     def has_index?(name)
       @indexes.has_key?(name) || @indexes.has_key?("#{schema}.#{name}")
-    end
-
-    def has_constraint?(name)
-      @constraints.has_key?(name)
     end
 
     def index_creation
@@ -167,14 +138,12 @@ module PgDiff
     end
 
     def create_statement
-      attribute_definitions = @attributes.map do |attribute|
-        attribute.definition
-      end
+      definitions = @attributes.definitions + @constraints.definitions
 
       statement = <<~EOT
         CREATE TABLE #{qualified_name}
         (
-          #{attribute_definitions.join(",\n  ")}
+        #{definitions.join(",\n").gsub(/^/, "  ")}
         );
       EOT
       statement.strip

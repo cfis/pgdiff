@@ -36,3 +36,11 @@ CREATE TABLE IF NOT EXISTS shared_table_attribute_order
     start_location text NOT NULL,
     finish_location text NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS shared_table_constraints
+(
+    id integer NOT NULL,
+    street text NOT NULL,
+    city text NOT NULL,
+    code text NOT NULL
+);

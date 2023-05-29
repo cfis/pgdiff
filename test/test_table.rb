@@ -3,16 +3,16 @@ require File.expand_path('./test_helper', __dir__)
 class TestTable < TestCase
   def test_load
     tables = PgDiff::Table.from_database(self.source_connection)
-    assert_equal(4, tables.length)
+    assert_equal(5, tables.length)
 
     table_names = tables.map {|table| table.name}.sort
-    assert_equal(["shared_table", "shared_table_attribute_order", "shared_table_attribute_types", "source_table"],
+    assert_equal(["shared_table", "shared_table_attribute_order", "shared_table_attribute_types", "shared_table_constraints", "source_table"],
                  table_names)
   end
 
   def test_load_all
     tables = PgDiff::Table.from_database(self.source_connection, [])
-    assert_equal(72, tables.length)
+    assert_equal(73, tables.length)
   end
 
   def test_compare
@@ -27,7 +27,8 @@ class TestTable < TestCase
       (
         id integer NOT NULL,
         genus text NOT NULL,
-        species text NOT NULL
+        species text NOT NULL,
+        PRIMARY KEY (id)
       );
       /* Table public.shared_table_attribute_types has changed attributes
          @@ -3 +3 @@
@@ -41,7 +42,8 @@ class TestTable < TestCase
         name text NOT NULL,
         distance integer NOT NULL,
         start_location text NOT NULL,
-        finish_location text NOT NULL
+        finish_location text NOT NULL,
+        PRIMARY KEY (id)
       );
 
       /* Table public.shared_table_attribute_order has changed attributes
@@ -57,8 +59,12 @@ class TestTable < TestCase
         name text NOT NULL,
         start_location text NOT NULL,
         finish_location text NOT NULL,
-        distance integer NOT NULL
+        distance integer NOT NULL,
+        PRIMARY KEY (id)
       );
+
+      ALTER TABLE public.shared_table_constraints ADD CONSTRAINT shared_table_constraints_pkey
+      PRIMARY KEY (id);
     EOS
     assert_equal(expected.strip, output.string.strip)
   end
