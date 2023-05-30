@@ -1,3 +1,4 @@
+require 'set'
 require 'pg'
 require 'pgdiff/attribute'
 require 'pgdiff/attributes'
