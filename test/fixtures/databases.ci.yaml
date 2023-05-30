@@ -1,0 +1,15 @@
+# To run tests:
+#  1. Copy this file to test/connections/databases.yaml.
+#  2. Update to match the databases you want to test against.
+
+source:
+  host: localhost
+  dbname: pgdiff_source
+  user: postgres
+  password: postgres
+
+target:
+  host: localhost
+  dbname: pgdiff_target
+  user: postgres
+  password: postgres

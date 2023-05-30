@@ -11,7 +11,7 @@ module PgDiff
     def self.config
       @config ||= begin
         # Find the file location
-        path = File.expand_path('test/fixtures/databases.yml')
+        path = File.expand_path('test/fixtures/databases.yaml')
         YAML.load_file(path)
       end
     end

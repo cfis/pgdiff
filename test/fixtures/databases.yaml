@@ -1,5 +1,5 @@
 # To run tests:
-#  1. Copy this file to test/connections/databases.yml.
+#  1. Copy this file to test/connections/databases.yaml.
 #  2. Update to match the databases you want to test against.
 
 source:
