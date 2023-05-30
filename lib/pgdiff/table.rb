@@ -79,9 +79,8 @@ module PgDiff
         ORDER BY 1,2;
       EOT
 
-      connection.query(query).reduce(Set.new) do |set, record|
+      connection.query(query).each_with_object(Set.new) do |record, set|
         set << new(connection, record['oid'], record['nspname'], record['relname'])
-        set
       end
     end
     

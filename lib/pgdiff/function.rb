@@ -36,7 +36,7 @@ module PgDiff
          AND proname != 'plpgsql_validator'
       EOT
 
-      connection.query(query).reduce(Set.new) do |set, record|
+      connection.query(query).each_with_object(Set.new) do |record, set|
         set << new(record['namespace'],
                    record['function_name'],
                    extension: record["extension_name"],
@@ -52,7 +52,6 @@ module PgDiff
                                when 's' then 'STABLE'
                                else nil
                              end)
-        set
       end
     end
 

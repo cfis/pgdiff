@@ -32,9 +32,8 @@ module PgDiff
         ORDER BY attnum;
       EOT
 
-      attributes = connection.query(query).reduce(Array.new) do |array, record|
+      attributes = connection.query(query).each_with_object(Array.new) do |record, array|
         array << Attribute.new(table, record['attname'], record['typedef'], record['attnotnull'], record['default'])
-        array
       end
 
       new(attributes)

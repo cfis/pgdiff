@@ -21,10 +21,9 @@ module PgDiff
         #{where_clause}
       EOT
 
-      connection.query(query).reduce(Set.new) do |set, record|
+      connection.query(query).each_with_object(Set.new) do |record, set|
         set << new(record['nspname'], record['collname'], record['collprovider'], record['collisdeterministic'],
                    record['collcollate'], record['collctype'], record['collversion'])
-        set
       end
     end
 
