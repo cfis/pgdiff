@@ -19,14 +19,14 @@ module PgDiff
 
     def create_statement
       <<~EOT
-        ALTER TABLE_OR_DOMAIN #{self.table_or_domain.qualified_name} ADD CONSTRAINT #{@name}
+        ALTER TABLE #{self.table_or_domain.qualified_name} ADD CONSTRAINT #{@name}
         #{@definition};
       EOT
     end
 
     def drop_statement
       <<~EOT
-        ALTER TABLE_OR_DOMAIN #{self.table_or_domain.qualified_name} DROP CONSTRAINT #{@name};"
+        ALTER TABLE #{self.table_or_domain.qualified_name} DROP CONSTRAINT #{@name};"
       EOT
     end
 
