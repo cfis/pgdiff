@@ -4,6 +4,8 @@ namespace :database do
   desc 'Create PgDiff test databases'
   task :create do
     # Create the databases
+    puts 11111111
+    puts PgDiff::ConnectionSpec.source
     postgres_connection = PG::Connection.new(PgDiff::ConnectionSpec.source.merge(dbname: 'postgres'))
     [PgDiff::ConnectionSpec.source['dbname'], PgDiff::ConnectionSpec.target['dbname']].each do |database_name|
       postgres_connection.exec("CREATE DATABASE #{database_name}")
@@ -11,8 +13,6 @@ namespace :database do
 
     # Setup the schemas
     [PgDiff::ConnectionSpec.source, PgDiff::ConnectionSpec.target].each do |connection_spec|
-      puts 11111111
-      puts connection_spec
       connection = PG::Connection.new(connection_spec)
       sql_path = File.expand_path(File.join(__dir__, "#{connection_spec['dbname']}.sql"))
       sql = File.read(sql_path)
