@@ -11,6 +11,8 @@ namespace :database do
 
     # Setup the schemas
     [PgDiff::ConnectionSpec.source, PgDiff::ConnectionSpec.target].each do |connection_spec|
+      puts 11111111
+      puts connection_spec
       connection = PG::Connection.new(connection_spec)
       sql_path = File.expand_path(File.join(__dir__, "#{connection_spec['dbname']}.sql"))
       sql = File.read(sql_path)

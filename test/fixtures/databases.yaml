@@ -6,7 +6,6 @@ source:
   host: localhost
   dbname: pgdiff_source
   user: postgres
-  password: postgres
 
 target:
   host: localhost
