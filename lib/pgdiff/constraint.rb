@@ -1,32 +1,32 @@
 module PgDiff
   class Constraint
-    attr_accessor :table, :name, :definition
+    attr_accessor :table_or_domain, :name, :definition
 
-    def initialize(table, name, definition)
-      @table = table
+    def initialize(table_or_domain, name, definition)
+      @table_or_domain = table_or_domain
       @name = name
       @definition = definition
     end
 
     def eql?(other)
-      self.table.qualified_name == other.table.qualified_name &&
+      self.table_or_domain.qualified_name == other.table_or_domain.qualified_name &&
         self.definition == other.definition
     end
 
     def hash
-      "#{self.table.qualified_name}.#{self.name}".hash
+      "#{self.table_or_domain.qualified_name}.#{self.name}".hash
     end
 
     def create_statement
       <<~EOT
-        ALTER TABLE #{self.table.qualified_name} ADD CONSTRAINT #{@name}
+        ALTER TABLE_OR_DOMAIN #{self.table_or_domain.qualified_name} ADD CONSTRAINT #{@name}
         #{@definition};
       EOT
     end
 
     def drop_statement
       <<~EOT
-        ALTER TABLE #{self.table.qualified_name} DROP CONSTRAINT #{@name};"
+        ALTER TABLE_OR_DOMAIN #{self.table_or_domain.qualified_name} DROP CONSTRAINT #{@name};"
       EOT
     end
 

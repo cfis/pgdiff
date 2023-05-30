@@ -1,6 +1,7 @@
 require 'pg'
 require 'pgdiff/attribute'
 require 'pgdiff/attributes'
+require 'pgdiff/collation'
 require 'pgdiff/constraint'
 require 'pgdiff/constraints'
 require 'pgdiff/database'

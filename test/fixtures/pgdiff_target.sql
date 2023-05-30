@@ -4,6 +4,13 @@ CREATE SCHEMA shared_schema;
 CREATE SEQUENCE target_sequence;
 CREATE SEQUENCE shared_sequence;
 
+CREATE DOMAIN target_domain AS text
+COLLATE pg_catalog."default"
+CHECK(VALUE ~ '^\d{5}$' OR VALUE ~ '^\d{5}-\d{4}$')
+CONSTRAINT length CHECK(LENGTH(VALUE) <= 10);
+
+CREATE DOMAIN shared_domain AS integer CHECK (VALUE > 0);
+
 CREATE TABLE IF NOT EXISTS target_table
 (
     id integer NOT NULL PRIMARY KEY,

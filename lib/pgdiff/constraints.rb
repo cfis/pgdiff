@@ -38,16 +38,16 @@ module PgDiff
       end
     end
 
-    def self.from_database(connection, table)
+    def self.from_database(connection, table_or_domain)
       query  = <<~EOT
         SELECT conname,
                pg_get_constraintdef(oid) 
         FROM pg_constraint
-        WHERE conrelid = #{table.oid}
+        WHERE #{table_or_domain.is_a?(Table) ? "conrelid" : "contypid"} = #{table_or_domain.oid}
       EOT
 
       constraints = connection.query(query).each_with_object(Hash.new) do |record, hash|
-        constraint = Constraint.new(table, record['conname'], record['pg_get_constraintdef'])
+        constraint = Constraint.new(table_or_domain, record['conname'], record['pg_get_constraintdef'])
         hash[constraint.name] = constraint
       end
 
@@ -65,8 +65,8 @@ module PgDiff
     def each
       return enum_for(:each) unless block_given?
 
-      @constraints.each do |attribute|
-        yield attribute
+      @constraints.each do |constraint|
+        yield constraint
       end
 
       self

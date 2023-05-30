@@ -4,6 +4,9 @@ CREATE SCHEMA shared_schema;
 CREATE SEQUENCE source_sequence;
 CREATE SEQUENCE shared_sequence;
 
+CREATE DOMAIN source_domain AS integer CHECK (VALUE < 0);
+CREATE DOMAIN shared_domain AS integer CHECK (VALUE > 0);
+
 CREATE TABLE IF NOT EXISTS source_table
 (
     id integer NOT NULL PRIMARY KEY,

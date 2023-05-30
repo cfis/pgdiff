@@ -54,8 +54,6 @@ module PgDiff
       end
 
       # --- Indexes ----
-
-
       # @to_compare = []
       # @new_database.tables.each do |name, table|
       #   unless @old_database.tables.has_key?(name)

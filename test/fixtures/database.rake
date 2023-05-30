@@ -22,7 +22,7 @@ namespace :database do
   task :drop do
     connection = PG::Connection.new(PgDiff::CONNECTION_SPEC.merge(dbname: 'postgres'))
     [PgDiff::SOURCE_DATABASE, PgDiff::TARGET_DATABASE].each do |database_name|
-      connection.exec("DROP DATABASE IF EXISTS #{database_name}")
+      connection.exec("DROP DATABASE IF EXISTS #{database_name} WITH (force)")
     end
   end
 
