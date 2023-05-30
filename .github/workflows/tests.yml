@@ -30,7 +30,7 @@ jobs:
           ruby-version: ${{matrix.ruby}}
           bundler-cache: true
       - name: Setup database config
-        run: cp test/fixtures/databases.ci.yaml test/fixtures/databases.yml
+        run: cp test/fixtures/databases.ci.yaml test/fixtures/databases.yaml
       - name: Create Database
         run: bundle exec rake database:create
       - name: Run Tests
