@@ -3,22 +3,16 @@ require 'minitest/autorun'
 
 Bundler.setup(:default)
 Bundler.require(:default)
+
 require 'pgdiff'
-
-module PgDiff
-  CONNECTION_SPEC = {host: "localhost",
-                     user: "postgres"}
-
-  SOURCE_DATABASE = "pgdiff_source"
-  TARGET_DATABASE = "pgdiff_target"
-end
+require_relative './connection_spec'
 
 class TestCase < Minitest::Test
   def source_connection
-    PG::Connection.new(PgDiff::CONNECTION_SPEC.merge(dbname: PgDiff::SOURCE_DATABASE))
+    PG::Connection.new(PgDiff::ConnectionSpec.source)
   end
 
   def target_connection
-    PG::Connection.new(PgDiff::CONNECTION_SPEC.merge(dbname: PgDiff::TARGET_DATABASE))
+    PG::Connection.new(PgDiff::ConnectionSpec.target)
   end
 end

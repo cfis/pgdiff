@@ -2,8 +2,12 @@ require 'yaml'
 
 module PgDiff
   class ConnectionSpec
-    def self.[](key)
-      config[key.to_s]
+    def self.source
+      config['source']
+    end
+
+    def self.target
+      config['target']
     end
 
     private
