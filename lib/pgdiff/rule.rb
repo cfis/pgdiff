@@ -3,6 +3,7 @@ module PgDiff
     attr_reader :name, :name, :definition
 
     def self.compare(source, target, output)
+      output << "-- ==== Rules ====" << "\n"
       source.difference(target).each do |rules|
         output << rules.drop_statement << "\n"
       end
@@ -10,6 +11,7 @@ module PgDiff
       target.difference(source).each do |rules|
         output << rules.create_statement << "\n"
       end
+      output << "\n"
     end
     
     def self.from_database(connection, ignore_schemas = Database::SYSTEM_SCHEMAS)

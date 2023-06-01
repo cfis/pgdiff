@@ -49,10 +49,11 @@ module PgDiff
               AND pg_index.indrelid = #{table.oid}
       EOT
 
-      connection.query(query).each_with_object(Hash.new) do |record, hash|
+      indexes = connection.query(query).each_with_object(Hash.new) do |record, hash|
         index = Index.new(record['name'], table, record['definition'])
         hash[index.name] = index
       end
+      new(indexes)
     end
 
     def initialize(indexes)

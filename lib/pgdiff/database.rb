@@ -1,6 +1,6 @@
 module PgDiff
   class Database
-    SYSTEM_SCHEMAS = %w['pg_catalog' 'pg_toast' 'information_schema']
+    SYSTEM_SCHEMAS = %w[pg_catalog pg_toast information_schema]
 
     attr_accessor :extensions, :tables, :views, :sequences, :schemas, :domains, :rules, :functions, :triggers
 

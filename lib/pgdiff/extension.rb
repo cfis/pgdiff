@@ -3,6 +3,7 @@ module PgDiff
     attr_reader :schema, :name, :version
 
     def self.compare(source, target, output)
+      output << "-- ==== Extensions ====" << "\n"
       source.intersection(target).each do |old_extension|
         new_extension = target.find do |an_extension|
           old_extension.qualified_name == an_extension.qualified_name
@@ -24,6 +25,7 @@ module PgDiff
       target.difference(source).each do |extension|
         output << extension.create_statement << "\n"
       end
+      output << "\n"
     end
 
     def self.from_database(connection, ignore_schemas = Database::SYSTEM_SCHEMAS)

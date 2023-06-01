@@ -3,6 +3,7 @@ module PgDiff
     attr_accessor :oid, :schema, :name, :attributes, :constraints, :indexes
 
     def self.compare(sources, targets, output)
+      output << "-- ==== Tables ====" << "\n"
       drops = []
       creates = []
       changes = []
@@ -124,7 +125,7 @@ module PgDiff
     end
 
     def update_statement(other, output)
-      output << "-- ==== #{other.qualified_name} =====" << "\n"
+      output << "-- ++++ #{other.qualified_name} ++++" << "\n"
 
       if !self.attributes.eql?(other.attributes)
         output << "-- Attributes --" << "\n"

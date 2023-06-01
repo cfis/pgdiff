@@ -16,6 +16,7 @@ module PgDiff
       self.qualified_name == other.qualified_name &&
         self.definition == other.definition
     end
+    alias :== :eql?
 
     def hash
       self.qualified_name.hash

@@ -3,6 +3,7 @@ module PgDiff
     attr_reader :oid, :schema, :name, :data_type, :not_null, :default, :collation, :constraints
 
     def self.compare(source, target, output)
+      output << "-- ==== Domains ====" << "\n"
       source.difference(target).each do |domain|
         output << domain.drop_statement << "\n"
       end
@@ -10,6 +11,7 @@ module PgDiff
       target.difference(source).each do |domain|
         output << domain.create_statement << "\n"
       end
+      output << "\n"
     end
 
     def self.from_database(connection, ignore_schemas = Database::SYSTEM_SCHEMAS)

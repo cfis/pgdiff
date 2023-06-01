@@ -26,7 +26,7 @@ module PgDiff
 
     def drop_statement
       <<~EOT
-        ALTER TABLE #{self.table_or_domain.qualified_name} DROP CONSTRAINT #{@name};"
+        ALTER TABLE #{self.table_or_domain.qualified_name} DROP CONSTRAINT #{@name};
       EOT
     end
 

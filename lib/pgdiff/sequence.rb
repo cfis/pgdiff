@@ -3,6 +3,7 @@ module PgDiff
     attr_accessor :schema, :name
 
     def self.compare(source, target, output)
+      output << "-- ==== Sequences ====" << "\n"
       source.difference(target).each do |sequence|
         output << sequence.drop_statement << "\n"
       end
@@ -10,6 +11,7 @@ module PgDiff
       target.difference(source).each do |sequence|
         output << sequence.create_statement << "\n"
       end
+      output << "\n"
     end
 
     def self.from_database(connection, ignore_schemas = Database::SYSTEM_SCHEMAS)
