@@ -39,6 +39,17 @@ The format of the connection strings are  documented in the Ruby PG gem at https
 For eample:
     "host=localhost dbname=a_database user=a_user password=a_password"
 
+== Ignore Schemas
+By default, pgdiff will not process the following system schemas:
+
+    * pg_catalog
+    * pg_toast
+    * information_schema
+
+You may specify additions schemas to ingore using the `--ingore-schemas` flag:
+
+    pgdiff --ignore_schemas=schema1,schema2
+
 == Output
 By default, pgdiff will output results to stdout. You may also specify a file path via the `--output` command line parameter:
 
