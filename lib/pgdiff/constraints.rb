@@ -62,6 +62,11 @@ module PgDiff
       @constraints = constraints
     end
 
+    def eql?(other)
+      @constraints.eql?(other.instance_variable_get(:@constraints))
+    end
+    alias :== :eql?
+
     def each
       return enum_for(:each) unless block_given?
 
@@ -75,11 +80,6 @@ module PgDiff
     def [](name)
       @constraints[name]
     end
-
-    def eql?(other)
-      @constraints.eql?(other.instance_variable_get(:@constraints))
-    end
-    alias :== :eql?
 
     def definitions
       @constraints.map do |name, constraint|

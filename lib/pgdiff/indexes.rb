@@ -59,6 +59,11 @@ module PgDiff
       @indexes = indexes
     end
 
+    def eql?(other)
+      @indexes.eql?(other.instance_variable_get(:@indexes))
+    end
+    alias :== :eql?
+
     def each
       return enum_for(:each) unless block_given?
 
@@ -72,11 +77,6 @@ module PgDiff
     def [](name)
       @indexes[name]
     end
-
-    def eql?(other)
-      @indexes.eql?(other.instance_variable_get(:@indexes))
-    end
-    alias :== :eql?
 
     def definitions
       @indexes.map do |name, index|

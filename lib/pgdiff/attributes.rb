@@ -6,16 +6,53 @@ module PgDiff
     include Enumerable
 
     def self.compare(sources, targets, output)
-      source_definitions = sources.definitions
-      target_definitions = targets.definitions
-      diffs = ::Diff::LCS.diff(source_definitions, target_definitions)
+      drops = []
+      creates = []
+      changes = []
 
-      file_length_difference = 0
-      diffs.each do |piece|
-        hunk = ::Diff::LCS::Hunk.new(source_definitions, target_definitions, piece, 0, file_length_difference)
-        file_length_difference = hunk.file_length_difference
-        output << hunk.diff(:unified).gsub(/^/, '   ') << "\n"
+      sources.each do |name, source|
+        target = targets[name]
+        case
+          when target.nil?
+            drops << source
+          when !source.eql?(target)
+            changes << [source, target]
+        end
       end
+
+      targets.each do |name, target|
+        source = sources[name]
+        if source.nil?
+          creates << target
+        end
+      end
+
+      drops.each do |attribute|
+        output << attribute.drop_statement << "\n"
+      end
+
+      creates.each do |attribute|
+        output << attribute.create_statement << "\n"
+      end
+
+      changes.each do |source, target|
+        output << source.drop_statement << "\n"
+        output << target.create_statement << "\n"
+        output << "\n"
+      end
+
+
+
+      # source_definitions = sources.definitions
+      # target_definitions = targets.definitions
+      # diffs = ::Diff::LCS.diff(source_definitions, target_definitions)
+      #
+      # file_length_difference = 0
+      # diffs.each do |piece|
+      #   hunk = ::Diff::LCS::Hunk.new(source_definitions, target_definitions, piece, 0, file_length_difference)
+      #   file_length_difference = hunk.file_length_difference
+      #   output << hunk.diff(:unified).gsub(/^/, '   ') << "\n"
+      # end
     end
 
     def self.from_database(connection, table)
@@ -31,8 +68,9 @@ module PgDiff
         ORDER BY attnum;
       EOT
 
-      attributes = connection.query(query).each_with_object(Array.new) do |record, array|
-        array << Attribute.new(table, record['attname'], record['typedef'], record['attnotnull'], record['default'])
+      attributes = connection.query(query).each_with_object(Hash.new) do |record, hash|
+        attribute = Attribute.new(table, record['attname'], record['typedef'], record['attnotnull'], record['default'])
+        hash[attribute.name] = attribute
       end
 
       new(attributes)
@@ -41,6 +79,11 @@ module PgDiff
     def initialize(attributes)
       @attributes = attributes
     end
+
+    def eql?(other)
+      @attributes.eql?(other.instance_variable_get(:@attributes))
+    end
+    alias :== :eql?
 
     def each
       return enum_for(:each) unless block_given?
@@ -52,13 +95,12 @@ module PgDiff
       self
     end
 
-    def eql?(other)
-      @attributes.eql?(other.instance_variable_get(:@attributes))
+    def [](name)
+      @attributes[name]
     end
-    alias :== :eql?
 
     def definitions
-      @attributes.map do |attribute|
+      @attributes.map do |name, attribute|
         attribute.definition
       end
     end

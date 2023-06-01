@@ -124,18 +124,20 @@ module PgDiff
     end
 
     def update_statement(other, output)
+      output << "-- ==== #{other.qualified_name} =====" << "\n"
+
       if !self.attributes.eql?(other.attributes)
-        output << "/* Table " << self.qualified_name << " has changed attributes" << "\n"
+        output << "-- Attributes --" << "\n"
         Attributes.compare(self.attributes, other.attributes, output)
-        output << "*/" << "\n"
       end
 
       if !self.constraints.eql?(other.constraints)
-        output << "-- Table " << self.qualified_name << " has changed constraints" << "\n"
+        output << "-- Constraints --" << "\n"
         Constraints.compare(self.constraints, other.constraints, output)
       end
 
       if !self.indexes.eql?(other.indexes)
+        output << "-- Indexes --" << "\n"
         Indexes.compare(self.indexes, other.indexes, output)
       end
     end

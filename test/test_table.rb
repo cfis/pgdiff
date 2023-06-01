@@ -30,21 +30,31 @@ class TestTable < TestCase
         species text NOT NULL,
         PRIMARY KEY (id)
       );
-      /* Table public.shared_table_attribute_types has changed attributes
-         @@ -3 +3 @@
-         -distance double precision NOT NULL
-         +distance integer NOT NULL
-      */
-      /* Table public.shared_table_attribute_order has changed attributes
-         @@ -3 +2 @@
-         -distance double precision NOT NULL
-         @@ -5 +5 @@
-         +distance integer NOT NULL
-      */
-      -- Table public.shared_table_constraints has changed constraints
+      -- ==== public.shared_table_attribute_types =====
+      -- Attributes --
+      ALTER TABLE public.shared_table_attribute_types
+      DROP COLUMN distance CASCADE;
+      
+      ALTER TABLE public.shared_table_attribute_types
+      ADD COLUMN distance distance integer NOT NULL;
+
+
+      -- ==== public.shared_table_attribute_order =====
+      -- Attributes --
+      ALTER TABLE public.shared_table_attribute_order
+      DROP COLUMN distance CASCADE;
+      
+      ALTER TABLE public.shared_table_attribute_order
+      ADD COLUMN distance distance integer NOT NULL;
+
+
+      -- ==== public.shared_table_constraints =====
+      -- Constraints --
       ALTER TABLE public.shared_table_constraints ADD CONSTRAINT shared_table_constraints_pkey
       PRIMARY KEY (id);
 
+      -- ==== public.shared_table_indexes =====
+      -- Indexes --
       DROP INDEX public.shared_table_indexes.street_idx;
       CREATE UNIQUE INDEX street_idx ON public.shared_table_indexes USING btree (street);
 
