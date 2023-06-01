@@ -16,7 +16,6 @@ module PgDiff
         file_length_difference = hunk.file_length_difference
         output << hunk.diff(:unified).gsub(/^/, '   ') << "\n"
       end
-      output << "*/" << "\n"
     end
 
     def self.from_database(connection, table)

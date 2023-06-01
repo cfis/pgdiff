@@ -1,39 +1,15 @@
 module PgDiff
   class Index
-    attr_reader :schema, :name, :definition
+    attr_reader :name, :table, :definition
 
-    def self.compare(source, target, output)
-      source.difference(target).each do |index|
-        output << index.drop_statement << "\n"
-      end
-
-      target.difference(source).each do |index|
-        output << index.create_statement << "\n"
-      end
-    end
-
-    def self.from_database(connection, table)
-      query  = <<~EOT
-        SELECT indexrelid::regclass AS indname,
-               pg_get_indexdef(indexrelid) AS def
-        FROM pg_index
-        WHERE indrelid = '#{table.qualified_name}'::regclass 
-          AND NOT indisprimary
-      EOT
-
-      connection.query(query).each_with_object(Set.new) do |record, set|
-        set << new(table.schema, record['indname'], record['def'])
-      end
-    end
-
-    def initialize(schema, name, definition)
-      @schema = schema
+    def initialize(name, table, definition)
       @name = name
+      @table = table
       @definition = definition
     end
 
     def qualified_name
-      "#{self.schema}.#{self.name}"
+      "#{self.table.qualified_name}.#{self.name}"
     end
 
     def eql?(other)
@@ -46,7 +22,7 @@ module PgDiff
     end
 
     def create_statement
-      self.definition
+      "#{self.definition};"
     end
 
     def drop_statement

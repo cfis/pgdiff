@@ -47,3 +47,14 @@ CREATE TABLE IF NOT EXISTS shared_table_constraints
     city text NOT NULL,
     code text NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS shared_table_indexes
+(
+    id integer NOT NULL,
+    street text NOT NULL,
+    city text NOT NULL,
+    code text NOT NULL
+);
+
+CREATE INDEX street_idx ON shared_table_indexes(street);
+CREATE UNIQUE INDEX code_idx ON shared_table_indexes(code);

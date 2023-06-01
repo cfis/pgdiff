@@ -7,14 +7,18 @@ module PgDiff
       creates = []
       changes = []
 
+      # Create source hash table keyed on index qualified names
       source_hash = sources.each_with_object(Hash.new) do |table, hash|
         hash[table.qualified_name] = table
       end
 
+      # Create target hash table keyed on index qualified names
       target_hash = targets.each_with_object(Hash.new) do |table, hash|
         hash[table.qualified_name] = table
       end
 
+      # Now compare the two hashes to find source only keys (drops), target
+      # only keys (creates) and shared keys (changes)
       source_hash.each do |key, source|
         target = target_hash[key]
         case
@@ -32,48 +36,27 @@ module PgDiff
         end
       end
 
+      # Process drops
       drops.each do |table|
         output << table.drop_statement << "\n"
       end
 
+      # Process creates
       creates.each do |table|
         output << table.create_statement << "\n"
       end
 
+      # Process changes - are these attribute or constraint changes?
       changes.each do |source, target|
-        if !source.attributes.eql?(target.attributes)
-          output << "/* Table " << source.qualified_name << " has changed attributes" << "\n"
-          Attributes.compare(source.attributes, target.attributes, output)
-          output << source.drop_statement << "\n"
-          output << target.create_statement << "\n"
-          output << "\n"
-        else
-          output << "/* Table " << source.qualified_name << " has changed constraints */" << "\n"
-          Constraints.compare(source.constraints, target.constraints, output)
-        end
+        source.update_statement(target, output)
       end
-
-      # --- Indexes ----
-      # @to_compare = []
-      # @new_database.tables.each do |name, table|
-      #   unless @old_database.tables.has_key?(name)
-      #     add_script(:tables_create ,  table.create_statement)
-      #     add_script(:indices_create ,  table.index_creation) unless table.indexes.empty?
-      #     @to_compare << name
-      #   else
-      #     diff_attributes(@old_database.tables[name], table)
-      #     diff_indexes(@old_database.tables[name], table)
-      #     @to_compare << name
-      #   end
-      # end
     end
 
     def self.from_database(connection, ignore_schemas = Database::SYSTEM_SCHEMAS)
       query = <<~EOT
         SELECT pg_class.oid, pg_namespace.nspname, pg_class.relname, pg_class.relkind
         FROM pg_catalog.pg_class
-        LEFT JOIN pg_catalog.pg_user ON pg_class.relowner = pg_user.usesysid 
-        LEFT JOIN pg_catalog.pg_namespace ON pg_class.relnamespace = pg_namespace.oid 
+        JOIN pg_catalog.pg_namespace ON pg_class.relnamespace = pg_namespace.oid 
         WHERE pg_class.relkind = 'r'
           #{ignore_schemas.empty? ? "" : "AND pg_namespace.nspname NOT IN (#{ignore_schemas.join(', ')})"}
         ORDER BY 1,2;
@@ -90,9 +73,9 @@ module PgDiff
       @name = table_name
       @attributes = {}
       @constraints = {}
-      @indexes = Index.from_database(connection, self)
       @attributes = Attributes.from_database(connection, self)
       @constraints = Constraints.from_database(connection, self)
+      @indexes = Indexes.from_database(connection, self)
     end
 
     def qualified_name
@@ -102,7 +85,8 @@ module PgDiff
     def eql?(other)
       self.qualified_name == other.qualified_name &&
         self.attributes == other.attributes &&
-        self.constraints == other.constraints
+        self.constraints == other.constraints &&
+        self.indexes == other.indexes
     end
 
     def hash
@@ -129,12 +113,31 @@ module PgDiff
         (
         #{definitions.join(",\n").gsub(/^/, "  ")}
         );
+
+        #{@indexes.map(&:definition).join(",\n").gsub(/^/, "  ")}
       EOT
       statement.strip
     end
 
     def drop_statement
       "DROP TABLE #{qualified_name} CASCADE;"
+    end
+
+    def update_statement(other, output)
+      if !self.attributes.eql?(other.attributes)
+        output << "/* Table " << self.qualified_name << " has changed attributes" << "\n"
+        Attributes.compare(self.attributes, other.attributes, output)
+        output << "*/" << "\n"
+      end
+
+      if !self.constraints.eql?(other.constraints)
+        output << "-- Table " << self.qualified_name << " has changed constraints" << "\n"
+        Constraints.compare(self.constraints, other.constraints, output)
+      end
+
+      if !self.indexes.eql?(other.indexes)
+        Indexes.compare(self.indexes, other.indexes, output)
+      end
     end
 
     def to_s

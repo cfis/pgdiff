@@ -23,7 +23,7 @@ module PgDiff
       Rule.compare(@old_database.rules, @new_database.rules, output)
       Function.compare(@old_database.functions, @new_database.functions, output)
 
-      output
+      output.string
     end
 
     def add_script(section, statement)
