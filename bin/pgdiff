@@ -45,11 +45,20 @@ args = OptionParser.new do |parser|
     options.ignore_schemas = ignore_schemas.split(',').map {|schema_name| schema_name.strip}
   end
 
+  parser.on("--output=file_path", "Save output to file. Otherwise printed to stdout") do |path|
+    options.path = path
+  end
+
   parser.on("-h", "--help", "Prints this help") do
     puts parser
     exit
   end
 end.parse!
 
-diff = PgDiff::Diff.new(options.source, options.target, ignore_schemas: options.ignore_schemas)
-puts diff.run_compare
+output = if options.path.nil?
+           STDOUT
+         else
+           File.open(options.path)
+         end
+diff = PgDiff::Diff.new(output, options.source, options.target, ignore_schemas: options.ignore_schemas)
+diff.run_compare
