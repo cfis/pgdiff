@@ -1,5 +1,13 @@
 = Changelog
 
+=== 2.0.1 (June 2, 2023)
+* Fix incorrect quoting of system schemas
+
+=== 2.0.0 (June 1, 2023)
+* Add new command line arguments
+* Significantly improve performance
+* Rewrite to imporove modularity
+
 === 1.0.0 (January 31, 2015)
 * Improve constraint checking
 * Change output ordering
