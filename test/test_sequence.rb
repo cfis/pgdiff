@@ -38,9 +38,10 @@ class TestSequence < TestCase
     output = StringIO.new
     PgDiff::Sequence.compare(source, target, output)
     expected = <<~EOS
+      -- ==== Sequences ====
       DROP SEQUENCE public.source_sequence CASCADE;
       CREATE SEQUENCE public.target_sequence;
     EOS
-    assert_equal(expected, output.string)
+    assert_equal(expected.strip, output.string.strip)
   end
 end

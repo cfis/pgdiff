@@ -34,6 +34,7 @@ class TestDomain < TestCase
     output = StringIO.new
     PgDiff::Domain.compare(source, target, output)
     expected = <<~EOS
+      -- ==== Domains ====
       DROP DOMAIN public.source_domain CASCADE;
       
       CREATE DOMAIN target_domain AS text
@@ -42,6 +43,6 @@ class TestDomain < TestCase
       CONSTRAINT target_domain_check CHECK (((VALUE ~ '^\\d{5}$'::text) OR (VALUE ~ '^\\d{5}-\\d{4}$'::text)))
       CONSTRAINT length CHECK ((length(VALUE) <= 10));
     EOS
-    assert_equal(expected, output.string)
+    assert_equal(expected.strip, output.string.strip)
   end
 end

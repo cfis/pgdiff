@@ -26,9 +26,10 @@ class TestSchema < TestCase
     output = StringIO.new
     PgDiff::Schema.compare(source, target, output)
     expected = <<~EOS
+      -- ==== Schemas ====
       DROP SCHEMA source_schema;
       CREATE SCHEMA target_schema;
     EOS
-    assert_equal(expected, output.string)
+    assert_equal(expected.strip, output.string.strip)
   end
 end
